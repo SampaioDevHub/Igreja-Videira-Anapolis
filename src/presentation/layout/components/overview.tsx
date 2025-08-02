@@ -36,7 +36,6 @@ export function Overview({ receitas, despesas }: OverviewProps) {
       monthlyData[monthKey].despesas += despesa.valor
     })
 
-    // Converter para array e ordenar
     return Object.entries(monthlyData)
       .map(([month, values]) => ({
         name: new Date(month + "-01").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }),
