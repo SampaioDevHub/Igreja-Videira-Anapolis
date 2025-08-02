@@ -53,11 +53,7 @@ const navigation = [
         href: "/ofertas",
         icon: DollarSign,
       },
-      {
-        name: "Contas",
-        href: "/contas",
-        icon: CreditCard,
-      },
+      
     ],
   },
   {
