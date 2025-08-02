@@ -280,7 +280,7 @@ export default function ConfiguracoesPage() {
       </Card>
 
       {/* Notificações */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -356,10 +356,11 @@ export default function ConfiguracoesPage() {
             Salvar Notificações
           </Button>
         </CardContent>
-      </Card>
+      </Card> */}
+      
 
       {/* Segurança */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
@@ -415,7 +416,8 @@ export default function ConfiguracoesPage() {
             Salvar Segurança
           </Button>
         </CardContent>
-      </Card>
+      </Card> */}
+      
 
       {/* Aparência */}
       <Card>
@@ -445,7 +447,7 @@ export default function ConfiguracoesPage() {
       </Card>
 
       {/* Dados e Backup */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
@@ -474,7 +476,8 @@ export default function ConfiguracoesPage() {
             <p>• Excluir: Remove permanentemente todos os dados (não pode ser desfeito)</p>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
+      
 
       {/* Informações da Configuração Atual */}
       {igrejaConfig.nome && (
@@ -512,6 +515,7 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
       )}
+
     </div>
   )
 }
