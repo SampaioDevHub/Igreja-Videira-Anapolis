@@ -15,7 +15,6 @@ export function Overview({ receitas, despesas }: OverviewProps) {
   const data = useMemo(() => {
     const monthlyData: { [key: string]: { receitas: number; despesas: number } } = {}
 
-    // Processar receitas
     receitas.forEach((receita) => {
       const date = new Date(receita.data)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
