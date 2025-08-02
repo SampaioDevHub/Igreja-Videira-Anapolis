@@ -1,25 +1,17 @@
 "use client"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Settings,
   User,
-  Bell,
-  Shield,
-  Database,
   Palette,
   Church,
   Save,
-  Download,
-  Upload,
-  Trash2,
   Loader2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
@@ -39,23 +31,7 @@ export default function ConfiguracoesPage() {
     updateConfig,
   } = useIgrejaConfig()
 
-  // Estados para configurações de notificação
-  const [notificacoes, setNotificacoes] = useState({
-    emailReceitas: true,
-    emailDespesas: true,
-    emailRelatorios: false,
-    pushNotifications: true,
-    lembretesDespesas: true,
-    resumoMensal: true,
-  })
-
-  // Estados para configurações de segurança
-  const [seguranca, setSeguranca] = useState({
-    autenticacaoDoisFatores: false,
-    backupAutomatico: true,
-    logAuditoria: true,
-    sessaoExpira: "30",
-  })
+ 
 
   const handleSaveIgrejaConfig = async () => {
     const success = await saveConfig(igrejaConfig)
@@ -69,57 +45,6 @@ export default function ConfiguracoesPage() {
       alert({
         title: "Erro",
         description: "Erro ao salvar as configurações da igreja.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleSaveNotificacoes = () => {
-    // Aqui você salvaria as configurações de notificação no Firebase também
-    alert({
-      title: "Notificações atualizadas!",
-      description: "Suas preferências de notificação foram salvas.",
-    })
-  }
-
-  const handleSaveSeguranca = () => {
-    // Aqui você salvaria as configurações de segurança no Firebase também
-    alert({
-      title: "Segurança atualizada!",
-      description: "Suas configurações de segurança foram salvas.",
-    })
-  }
-
-  const handleExportData = () => {
-    // Simular exportação de dados
-    alert({
-      title: "Exportação iniciada!",
-      description: "Seus dados estão sendo preparados para download.",
-    })
-  }
-
-  const handleImportData = () => {
-    // Simular importação de dados
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = ".json,.csv"
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        alert({
-          title: "Importação iniciada!",
-          description: `Processando arquivo: ${file.name}`,
-        })
-      }
-    }
-    input.click()
-  }
-
-  const handleDeleteAllData = () => {
-    if (confirm("ATENÇÃO: Esta ação irá excluir TODOS os dados. Esta ação não pode ser desfeita. Deseja continuar?")) {
-      alert({
-        title: "Dados excluídos!",
-        description: "Todos os dados foram removidos do sistema.",
         variant: "destructive",
       })
     }
