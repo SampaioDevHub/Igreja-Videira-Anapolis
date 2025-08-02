@@ -113,7 +113,7 @@ export function Sidebar() {
             <Church className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-sm font-semibold leading-none">Igreja Videira</h1>
+            <h1 className="text-sm font-semibold leading-none">SF Orbe</h1>
           </div>
         </div>
       </div>
