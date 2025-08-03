@@ -21,6 +21,7 @@ import {
 import { Plus, Search, Trash2, Edit, Users, UserCheck, UserX, Eye, FileText } from "lucide-react"
 import { useMembros } from "@/src/core/hooks/use-membros"
 import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
+import { toast } from "react-toastify"
 
 
 export default function MembrosPage() {
@@ -46,27 +47,17 @@ export default function MembrosPage() {
     e.preventDefault()
 
     if (!formData.nome || !formData.dataCadastro) {
-      alert({
-        title: "Erro",
-        description: "Nome e data de cadastro são obrigatórios.",
-        variant: "destructive",
-      })
+      toast.error("Nome e data de cadastro são obrigatórios.")
       return
     }
 
     try {
       if (editingId) {
         await updateMembro(editingId, formData)
-        alert({
-          title: "Membro atualizado!",
-          description: "Os dados do membro foram atualizados com sucesso.",
-        })
+        toast.success("Membro atualizado com sucesso!")
       } else {
         await addMembro(formData)
-        alert({
-          title: "Membro cadastrado!",
-          description: "O membro foi cadastrado com sucesso.",
-        })
+        toast.success("Membro cadastrado com sucesso!")
       }
 
       setFormData({
@@ -82,11 +73,7 @@ export default function MembrosPage() {
       setEditingId(null)
       setOpen(false)
     } catch (error) {
-      alert({
-        title: "Erro",
-        description: "Erro ao salvar membro.",
-        variant: "destructive",
-      })
+      toast.error("Erro ao salvar membro.")
     }
   }
 
@@ -109,10 +96,7 @@ export default function MembrosPage() {
     if (confirm("Tem certeza que deseja excluir este membro?")) {
       try {
         await deleteMembro(id)
-        alert({
-          title: "Membro excluído!",
-          description: "O membro foi excluído com sucesso.",
-        })
+        toast.success("Membro excluído com sucesso!")
       } catch (error) {
         alert({
           title: "Erro",
@@ -128,10 +112,7 @@ export default function MembrosPage() {
     pdfGenerator.generateMembersReport(membros)
     pdfGenerator.save(`relatorio-membros-${new Date().toISOString().split("T")[0]}.pdf`)
 
-    alert({
-      title: "Relatório gerado!",
-      description: "O relatório de membros foi baixado com sucesso.",
-    })
+    toast.success("Relatório de membros gerado com sucesso!")
   }
 
   const filteredMembros = membros.filter((membro) => {

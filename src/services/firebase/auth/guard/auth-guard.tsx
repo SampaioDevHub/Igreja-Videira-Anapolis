@@ -7,8 +7,8 @@ import { Church } from "lucide-react"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
+  const { user, loading } = useAuth() 
+  const router = useRouter() 
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {

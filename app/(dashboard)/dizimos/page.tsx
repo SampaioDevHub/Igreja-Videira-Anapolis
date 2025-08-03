@@ -33,7 +33,7 @@ import {
   QrCode,
 } from "lucide-react"
 import { useReceitas } from "@/src/core/hooks/use-receitas"
-
+import { toast } from 'react-toastify'
 
 const formasPagamento = [
   {
@@ -99,11 +99,7 @@ export default function DizimosPage() {
     e.preventDefault()
 
     if (!formData.membro || !formData.valor || !formData.data || !formData.formaPagamento) {
-      alert({
-        title: "Erro",
-        description: "Membro, valor, data e forma de pagamento são obrigatórios.",
-        variant: "destructive",
-      })
+     toast.error("Membro, valor, data e forma de pagamento são obrigatórios.")
       return
     }
 
@@ -120,16 +116,11 @@ export default function DizimosPage() {
 
       if (editingId) {
         await updateReceita(editingId, dizimoData)
-        alert({
-          title: "Dízimo atualizado!",
-          description: "O dízimo foi atualizado com sucesso.",
-        })
+        toast.success("Dízimo atualizado com sucesso.")
       } else {
         await addReceita(dizimoData)
-        alert({
-          title: "Dízimo registrado!",
-          description: "O dízimo foi registrado com sucesso.",
-        })
+        toast.success("Dízimo registrado com sucesso.")
+
       }
 
       setFormData({
@@ -144,11 +135,7 @@ export default function DizimosPage() {
       setOpen(false)
     } catch (error) {
       console.error("Erro ao salvar dízimo:", error)
-      alert({
-        title: "Erro",
-        description: "Erro ao salvar dízimo.",
-        variant: "destructive",
-      })
+      toast.error("Erro ao salvar dízimo.")
     }
   }
 
@@ -172,17 +159,12 @@ export default function DizimosPage() {
     if (confirm("Tem certeza que deseja excluir este dízimo?")) {
       try {
         await deleteReceita(id)
-        alert({
-          title: "Dízimo excluído!",
-          description: "O dízimo foi excluído com sucesso.",
-        })
+        toast.success("Dízimo excluído com sucesso.")
+
       } catch (error) {
         console.error("Erro ao excluir dízimo:", error)
-        alert({
-          title: "Erro",
-          description: "Erro ao excluir dízimo.",
-          variant: "destructive",
-        })
+        toast.error("Erro ao excluir dízimo.")
+
       }
     }
   }

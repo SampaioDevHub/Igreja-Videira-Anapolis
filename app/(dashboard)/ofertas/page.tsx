@@ -34,6 +34,7 @@ import {
   QrCode,
 } from "lucide-react"
 import { useReceitas } from "@/src/core/hooks/use-receitas"
+import { toast } from "react-toastify"
 
 
 const formasPagamento = [
@@ -113,11 +114,7 @@ export default function OfertasPage() {
     e.preventDefault()
 
     if (!formData.descricao || !formData.valor || !formData.data || !formData.formaPagamento) {
-      alert({
-        title: "Erro",
-        description: "Descrição, valor, data e forma de pagamento são obrigatórios.",
-        variant: "destructive",
-      })
+      toast.error("Por favor, preencha todos os campos obrigatórios.")
       return
     }
 
@@ -133,16 +130,10 @@ export default function OfertasPage() {
 
       if (editingId) {
         await updateReceita(editingId, ofertaData)
-        alert({
-          title: "Oferta atualizada!",
-          description: "A oferta foi atualizada com sucesso.",
-        })
+        toast.success("Oferta atualizada com sucesso!")
       } else {
         await addReceita(ofertaData)
-        alert({
-          title: "Oferta registrada!",
-          description: "A oferta foi registrada com sucesso.",
-        })
+        toast.success("Oferta registrada com sucesso!")
       }
 
       setFormData({
@@ -157,11 +148,7 @@ export default function OfertasPage() {
       setOpen(false)
     } catch (error) {
       console.error("Erro ao salvar oferta:", error)
-      alert({
-        title: "Erro",
-        description: "Erro ao salvar oferta.",
-        variant: "destructive",
-      })
+      toast.error("Erro ao salvar oferta. Por favor, tente novamente.")
     }
   }
 
@@ -187,17 +174,10 @@ export default function OfertasPage() {
     if (confirm("Tem certeza que deseja excluir esta oferta?")) {
       try {
         await deleteReceita(id)
-        alert({
-          title: "Oferta excluída!",
-          description: "A oferta foi excluída com sucesso.",
-        })
+        toast.success("Oferta excluída com sucesso!")
       } catch (error) {
         console.error("Erro ao excluir oferta:", error)
-        alert({
-          title: "Erro",
-          description: "Erro ao excluir oferta.",
-          variant: "destructive",
-        })
+        toast.error("Erro ao excluir oferta. Por favor, tente novamente.")
       }
     }
   }

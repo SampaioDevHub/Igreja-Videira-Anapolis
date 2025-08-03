@@ -123,6 +123,7 @@ export function Sidebar() {
           <div className="flex flex-col min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{user?.displayName || "Usuário"}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            
           </div>
         </div>
       </div>

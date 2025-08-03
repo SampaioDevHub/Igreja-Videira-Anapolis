@@ -3,7 +3,8 @@ import { Header } from "@/src/presentation/layout/components/header"
 import { Sidebar } from "@/src/presentation/layout/components/sidebar"
 import { AuthGuard } from "@/src/services/firebase/auth/guard/auth-guard"
 import { DebugPanel } from "@/src/services/firebase/debug/debug-panel"
-
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 export default function DashboardLayout({
   children,
@@ -16,9 +17,12 @@ export default function DashboardLayout({
         <div className="hidden border-r bg-muted/40 md:block">
           <Sidebar />
            <NextTopLoader color="#f97316" showSpinner={false} />
+           <ToastContainer position="top-right"  autoClose={3000} />
         </div>
         <div className="flex flex-col">
+          
           <Header />
+
           <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">{children}</main>
           <DebugPanel />
         </div>
