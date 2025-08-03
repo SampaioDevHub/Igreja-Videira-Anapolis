@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
-import { notificationService } from "@/src/services/firebase/notification/notification-service"
+import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
 
 
 export interface Despesa {

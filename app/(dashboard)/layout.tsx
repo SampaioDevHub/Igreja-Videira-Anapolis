@@ -1,8 +1,8 @@
+import NextTopLoader from 'nextjs-toploader';
 import { Header } from "@/src/presentation/layout/components/header"
 import { Sidebar } from "@/src/presentation/layout/components/sidebar"
 import { AuthGuard } from "@/src/services/firebase/auth/guard/auth-guard"
 import { DebugPanel } from "@/src/services/firebase/debug/debug-panel"
-import type React from "react"
 
 
 export default function DashboardLayout({
@@ -15,6 +15,7 @@ export default function DashboardLayout({
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         <div className="hidden border-r bg-muted/40 md:block">
           <Sidebar />
+           <NextTopLoader color="#f97316" showSpinner={false} />
         </div>
         <div className="flex flex-col">
           <Header />

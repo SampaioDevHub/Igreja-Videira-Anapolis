@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -18,9 +19,60 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit, DollarSign, Heart, Calendar, TrendingUp } from "lucide-react"
+import {
+  Plus,
+  Search,
+  Trash2,
+  Edit,
+  Heart,
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  Smartphone,
+  CreditCard,
+  Banknote,
+  QrCode,
+} from "lucide-react"
 import { useReceitas } from "@/src/core/hooks/use-receitas"
 
+
+const formasPagamento = [
+  {
+    value: "pix",
+    label: "PIX",
+    icon: QrCode,
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    iconColor: "text-green-600",
+  },
+  {
+    value: "cartao-debito",
+    label: "Cartão de Débito",
+    icon: CreditCard,
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    iconColor: "text-blue-600",
+  },
+  {
+    value: "cartao-credito",
+    label: "Cartão de Crédito",
+    icon: CreditCard,
+    color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+    iconColor: "text-purple-600",
+  },
+  {
+    value: "dinheiro",
+    label: "Dinheiro",
+    icon: Banknote,
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+    iconColor: "text-yellow-600",
+  },
+  {
+    value: "transferencia",
+    label: "Transferência",
+    icon: Smartphone,
+    color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+    iconColor: "text-indigo-600",
+  },
+]
 
 export default function OfertasPage() {
   const [open, setOpen] = useState(false)
@@ -31,9 +83,11 @@ export default function OfertasPage() {
     valor: "",
     data: "",
     observacoes: "",
+    formaPagamento: "",
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [tipoFilter, setTipoFilter] = useState("all")
+  const [paymentFilter, setPaymentFilter] = useState("all")
 
   const { receitas, loading, addReceita, updateReceita, deleteReceita } = useReceitas()
 
@@ -58,10 +112,10 @@ export default function OfertasPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.descricao || !formData.valor || !formData.data) {
+    if (!formData.descricao || !formData.valor || !formData.data || !formData.formaPagamento) {
       alert({
         title: "Erro",
-        description: "Descrição, valor e data são obrigatórios.",
+        description: "Descrição, valor, data e forma de pagamento são obrigatórios.",
         variant: "destructive",
       })
       return
@@ -73,6 +127,8 @@ export default function OfertasPage() {
         categoria: "oferta",
         valor: Number.parseFloat(formData.valor),
         data: formData.data,
+        formaPagamento: formData.formaPagamento,
+        observacoes: formData.observacoes,
       }
 
       if (editingId) {
@@ -89,10 +145,18 @@ export default function OfertasPage() {
         })
       }
 
-      setFormData({ descricao: "", tipo: "", valor: "", data: "", observacoes: "" })
+      setFormData({
+        descricao: "",
+        tipo: "",
+        valor: "",
+        data: "",
+        observacoes: "",
+        formaPagamento: "",
+      })
       setEditingId(null)
       setOpen(false)
     } catch (error) {
+      console.error("Erro ao salvar oferta:", error)
       alert({
         title: "Erro",
         description: "Erro ao salvar oferta.",
@@ -112,7 +176,8 @@ export default function OfertasPage() {
       tipo: tipo,
       valor: oferta.valor.toString(),
       data: oferta.data,
-      observacoes: "",
+      observacoes: oferta.observacoes || "",
+      formaPagamento: oferta.formaPagamento || "pix",
     })
     setEditingId(oferta.id)
     setOpen(true)
@@ -127,6 +192,7 @@ export default function OfertasPage() {
           description: "A oferta foi excluída com sucesso.",
         })
       } catch (error) {
+        console.error("Erro ao excluir oferta:", error)
         alert({
           title: "Erro",
           description: "Erro ao excluir oferta.",
@@ -139,7 +205,8 @@ export default function OfertasPage() {
   const filteredOfertas = ofertas.filter((oferta) => {
     const matchesSearch = oferta.descricao.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesTipo = tipoFilter === "all" || oferta.descricao.toLowerCase().includes(tipoFilter.toLowerCase())
-    return matchesSearch && matchesTipo
+    const matchesPayment = paymentFilter === "all" || (oferta.formaPagamento || "pix") === paymentFilter
+    return matchesSearch && matchesTipo && matchesPayment
   })
 
   const stats = useMemo(() => {
@@ -157,14 +224,37 @@ export default function OfertasPage() {
     const maiorOferta = ofertas.length > 0 ? Math.max(...ofertas.map((o) => o.valor)) : 0
     const mediaOferta = ofertas.length > 0 ? totalGeral / ofertas.length : 0
 
+    // Estatísticas por forma de pagamento
+    const porFormaPagamento = ofertas.reduce(
+      (acc, oferta) => {
+        const forma = oferta.formaPagamento || "pix"
+        acc[forma] = (acc[forma] || 0) + oferta.valor
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+
     return {
       totalGeral,
       totalMesAtual,
       totalOfertas: ofertas.length,
       maiorOferta,
       mediaOferta,
+      porFormaPagamento,
     }
   }, [ofertas])
+
+  const getPaymentInfo = (formaPagamento: string) => {
+    return (
+      formasPagamento.find((fp) => fp.value === formaPagamento) || {
+        value: "pix",
+        label: "PIX",
+        icon: QrCode,
+        color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+        iconColor: "text-green-600",
+      }
+    )
+  }
 
   if (loading) {
     return (
@@ -182,14 +272,23 @@ export default function OfertasPage() {
             <Heart className="h-8 w-8 text-primary" />
             Ofertas
           </h1>
-          <p className="text-muted-foreground">Gerencie todas as ofertas da igreja</p>
+          <p className="text-muted-foreground">
+            Gerencie todas as ofertas da igreja com controle de formas de pagamento
+          </p>
         </div>
         <Dialog
           open={open}
           onOpenChange={(isOpen) => {
             setOpen(isOpen)
             if (!isOpen) {
-              setFormData({ descricao: "", tipo: "", valor: "", data: "", observacoes: "" })
+              setFormData({
+                descricao: "",
+                tipo: "",
+                valor: "",
+                data: "",
+                observacoes: "",
+                formaPagamento: "",
+              })
               setEditingId(null)
             }
           }}
@@ -229,9 +328,10 @@ export default function OfertasPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="descricao" className="text-right">
-                    Descrição
+                    Descrição *
                   </Label>
                   <Input
                     id="descricao"
@@ -239,11 +339,13 @@ export default function OfertasPage() {
                     className="col-span-3"
                     value={formData.descricao}
                     onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
+                    required
                   />
                 </div>
+
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="valor" className="text-right">
-                    Valor
+                    Valor *
                   </Label>
                   <Input
                     id="valor"
@@ -253,11 +355,13 @@ export default function OfertasPage() {
                     className="col-span-3"
                     value={formData.valor}
                     onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
+                    required
                   />
                 </div>
+
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="data" className="text-right">
-                    Data
+                    Data *
                   </Label>
                   <Input
                     id="data"
@@ -265,8 +369,37 @@ export default function OfertasPage() {
                     className="col-span-3"
                     value={formData.data}
                     onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
+                    required
                   />
                 </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="formaPagamento" className="text-right">
+                    Forma de Pagamento *
+                  </Label>
+                  <Select
+                    value={formData.formaPagamento}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, formaPagamento: value }))}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecione a forma de pagamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {formasPagamento.map((forma) => {
+                        const IconeComponente = forma.icon
+                        return (
+                          <SelectItem key={forma.value} value={forma.value}>
+                            <div className="flex items-center gap-2">
+                              <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
+                              {forma.label}
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label htmlFor="observacoes" className="text-right mt-2">
                     Observações
@@ -288,6 +421,7 @@ export default function OfertasPage() {
         </Dialog>
       </div>
 
+      {/* Cards de Estatísticas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -341,10 +475,34 @@ export default function OfertasPage() {
         </Card>
       </div>
 
+      {/* Cards de Formas de Pagamento */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {formasPagamento.map((forma) => {
+          const valor = stats.porFormaPagamento[forma.value] || 0
+          const IconeComponente = forma.icon
+          const percentual = stats.totalGeral > 0 ? (valor / stats.totalGeral) * 100 : 0
+
+          return (
+            <Card key={forma.value}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{forma.label}</CardTitle>
+                <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-muted-foreground">{percentual.toFixed(1)}% do total</p>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Histórico de Ofertas</CardTitle>
-          <CardDescription>Todas as ofertas registradas no sistema</CardDescription>
+          <CardDescription>Todas as ofertas registradas no sistema com formas de pagamento</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2 mb-4">
@@ -370,6 +528,25 @@ export default function OfertasPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Forma de pagamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as formas</SelectItem>
+                {formasPagamento.map((forma) => {
+                  const IconeComponente = forma.icon
+                  return (
+                    <SelectItem key={forma.value} value={forma.value}>
+                      <div className="flex items-center gap-2">
+                        <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
+                        {forma.label}
+                      </div>
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
           {filteredOfertas.length === 0 ? (
@@ -382,30 +559,50 @@ export default function OfertasPage() {
                 <TableRow>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Data</TableHead>
+                  <TableHead>Forma de Pagamento</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOfertas.map((oferta) => (
-                  <TableRow key={oferta.id}>
-                    <TableCell className="font-medium">{oferta.descricao}</TableCell>
-                    <TableCell>{new Date(oferta.data).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="text-right">
-                      R$ {oferta.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(oferta)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(oferta.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredOfertas.map((oferta) => {
+                  // Corrigido: Usar forma de pagamento com fallback
+                  const paymentInfo = getPaymentInfo(oferta.formaPagamento || "pix")
+                  const IconeComponente = paymentInfo.icon
+
+                  return (
+                    <TableRow key={oferta.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div>{oferta.descricao}</div>
+                          {oferta.observacoes && (
+                            <div className="text-xs text-muted-foreground">{oferta.observacoes}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(oferta.data).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell>
+                        <Badge className={paymentInfo.color}>
+                          <IconeComponente className="h-3 w-3 mr-1" />
+                          {paymentInfo.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        R$ {oferta.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(oferta)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(oferta.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           )}

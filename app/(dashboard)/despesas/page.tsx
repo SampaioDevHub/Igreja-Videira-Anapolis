@@ -64,13 +64,13 @@ export default function DespesasPage() {
         await updateDespesa(editingId, despesaData)
         Alert({
           title: "Despesa atualizada!",
-         
+
         })
       } else {
         await addDespesa(despesaData)
         Alert({
           title: "Despesa adicionada!",
-         
+
         })
       }
 
@@ -80,7 +80,7 @@ export default function DespesasPage() {
     } catch (error) {
       Alert({
         title: "Erro",
-       
+
         variant: "destructive",
       })
     }
@@ -104,12 +104,12 @@ export default function DespesasPage() {
         await deleteDespesa(id)
         Alert({
           title: "Despesa excluída!",
-       
+
         })
       } catch (error) {
         Alert({
           title: "Erro",
-    
+
           variant: "destructive",
         })
       }
@@ -338,7 +338,12 @@ export default function DespesasPage() {
                 <SelectItem value="manutencao">Manutenção</SelectItem>
                 <SelectItem value="infraestrutura">Infraestrutura</SelectItem>
                 <SelectItem value="ministerios">Ministérios</SelectItem>
+                <SelectItem value="agua ">Agua</SelectItem>
+                <SelectItem value="luz ">Luz</SelectItem>
+                <SelectItem value="energia">Energia</SelectItem>
+                <SelectItem value="combustivel">Combustivel</SelectItem>
                 <SelectItem value="outros">Outros</SelectItem>
+
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -378,13 +383,12 @@ export default function DespesasPage() {
                     <TableCell>{new Date(despesa.data).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          despesa.status === "Pago"
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${despesa.status === "Pago"
                             ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                             : despesa.status === "Pendente"
                               ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                               : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                        }`}
+                          }`}
                       >
                         {despesa.status}
                       </span>

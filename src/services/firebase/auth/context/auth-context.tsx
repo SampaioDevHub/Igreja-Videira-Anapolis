@@ -11,7 +11,7 @@ import {
   updateProfile,
 } from "firebase/auth"
 import { getAuthInstance } from "../../config/firebase"
-import { notificationService } from "../../notification/notification-service"
+import { notificationService } from "../../Modulo-Notification/notification-service"
 import { backupService } from "../../backup/backup-service"
 
 

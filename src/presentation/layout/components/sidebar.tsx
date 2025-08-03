@@ -3,9 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-
 import {
-  Church,
   DollarSign,
   FileText,
   Home,
@@ -15,12 +13,13 @@ import {
   TrendingUp,
   Users,
   BarChart3,
-  CreditCard,
   ChevronDown,
 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
+import Image from "next/image"
+import logo from "@/public/logo.png"
 
 const navigation = [
   {
@@ -53,7 +52,6 @@ const navigation = [
         href: "/ofertas",
         icon: DollarSign,
       },
-      
     ],
   },
   {
@@ -63,6 +61,11 @@ const navigation = [
       {
         name: "Membros",
         href: "/membros",
+        icon: Users,
+      },
+       {
+        name: "aniversariantes",
+        href: "/aniversariantes",
         icon: Users,
       },
     ],
@@ -105,12 +108,7 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Church className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-sm font-semibold leading-none">SF Orbe</h1>
-          </div>
+          <Image src={logo} alt="" width={130} height={130}/>
         </div>
       </div>
 

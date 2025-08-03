@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, Search, Trash2, Edit, Users, UserCheck, UserX, Eye, FileText } from "lucide-react"
 import { useMembros } from "@/src/core/hooks/use-membros"
-import { PDFGenerator } from "@/src/services/firebase/pdf/pdf-generator"
+import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
 
 
 export default function MembrosPage() {

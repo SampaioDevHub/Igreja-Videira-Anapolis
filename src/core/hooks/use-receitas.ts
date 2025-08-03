@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
+import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
 
 
 export interface Receita {
@@ -12,6 +13,9 @@ export interface Receita {
   categoria: string
   valor: number
   data: string
+  formaPagamento?: string
+  observacoes?: string
+  membro?: string
   userId: string
   createdAt: Date
 }
@@ -39,6 +43,10 @@ export function useReceitas() {
         return {
           id: doc.id,
           ...data,
+          // Garantir que campos opcionais existam
+          formaPagamento: data.formaPagamento || "pix",
+          observacoes: data.observacoes || "",
+          membro: data.membro || "",
         }
       }) as Receita[]
 
@@ -52,10 +60,17 @@ export function useReceitas() {
         const db = getFirestoreInstance()
         const q = query(collection(db, "receitas"), where("userId", "==", user.uid))
         const querySnapshot = await getDocs(q)
-        const receitasData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Receita[]
+        const receitasData = querySnapshot.docs.map((doc) => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            ...data,
+            // Garantir que campos opcionais existam
+            formaPagamento: data.formaPagamento || "pix",
+            observacoes: data.observacoes || "",
+            membro: data.membro || "",
+          }
+        }) as Receita[]
 
         // Ordenar manualmente por data
         receitasData.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
@@ -73,7 +88,7 @@ export function useReceitas() {
   const addReceita = async (receita: Omit<Receita, "id" | "userId" | "createdAt">) => {
     if (!user) {
       console.error("No user found for adding receita")
-      return
+      throw new Error("Usuário não autenticado")
     }
 
     try {
@@ -84,6 +99,10 @@ export function useReceitas() {
         ...receita,
         userId: user.uid,
         createdAt: new Date(),
+        // Garantir valores padrão
+        formaPagamento: receita.formaPagamento || "pix",
+        observacoes: receita.observacoes || "",
+        membro: receita.membro || "",
       }
 
       console.log("Receita data to save:", receitaData)
@@ -99,6 +118,13 @@ export function useReceitas() {
       // Atualizar o estado local imediatamente
       setReceitas((prev) => [newReceita, ...prev])
       console.log("Local state updated")
+
+      // Notificar nova receita
+      try {
+        await notificationService.notifyNewReceita(receita.valor, receita.categoria)
+      } catch (notificationError) {
+        console.warn("Erro ao enviar notificação:", notificationError)
+      }
 
       // Refetch para garantir sincronização
       setTimeout(() => {
@@ -116,8 +142,16 @@ export function useReceitas() {
   const updateReceita = async (id: string, receita: Partial<Receita>) => {
     try {
       const db = getFirestoreInstance()
-      await updateDoc(doc(db, "receitas", id), receita)
-      setReceitas((prev) => prev.map((r) => (r.id === id ? { ...r, ...receita } : r)))
+      const updateData = {
+        ...receita,
+        // Garantir valores padrão
+        formaPagamento: receita.formaPagamento || "pix",
+        observacoes: receita.observacoes || "",
+        membro: receita.membro || "",
+      }
+
+      await updateDoc(doc(db, "receitas", id), updateData)
+      setReceitas((prev) => prev.map((r) => (r.id === id ? { ...r, ...updateData } : r)))
       console.log("Receita updated:", id)
     } catch (error) {
       console.error("Erro ao atualizar receita:", error)
@@ -146,7 +180,7 @@ export function useReceitas() {
       setReceitas([])
       setLoading(false)
     }
-  }, [user]) // Usar user em vez de user?.uid para evitar re-renders desnecessários
+  }, [user])
 
   return {
     receitas,

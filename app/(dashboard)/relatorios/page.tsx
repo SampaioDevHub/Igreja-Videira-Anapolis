@@ -27,7 +27,7 @@ import {
 } from "recharts"
 import { useReceitas } from "@/src/core/hooks/use-receitas"
 import { useDespesas } from "@/src/core/hooks/use-despesas"
-import { PDFGenerator } from "@/src/services/firebase/pdf/pdf-generator"
+import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"]
 
