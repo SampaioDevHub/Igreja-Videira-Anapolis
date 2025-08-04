@@ -97,14 +97,14 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Digite seu e-mail:</Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
                 inputMode="email"
                 spellCheck={false}
-                placeholder="email@dominio.com"
+                placeholder="E-mail"
                 {...register("email")}
                 disabled={loading}
               />
@@ -114,7 +114,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">Digite sua senha</Label>
               <Input
                 id="password"
                 type="password"

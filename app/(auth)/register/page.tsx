@@ -168,14 +168,14 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
               {loading ? "Criando conta..." : "Criar Conta"}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
             Já tem uma conta?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="text-primary hover:underline cursor-pointer">
               Entrar
             </Link>
           </div>

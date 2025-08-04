@@ -105,7 +105,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
           <DialogFooter>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full cursor-pointer"
               disabled={loading || email.trim() === ""}
               aria-busy={loading}
             >
