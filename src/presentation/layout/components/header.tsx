@@ -1,5 +1,11 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+import { Bell, LogOut, User } from "lucide-react"
+
+import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
+import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
+
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,34 +16,43 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, LogOut, User } from "lucide-react"
-
-import { useRouter } from "next/navigation"
-
-import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { ModeToggle } from "./mode-toggle"
-import { Alert } from "@/components/ui/alert"
 
 export function Header() {
   const { user, logout } = useAuth()
   const router = useRouter()
 
-
   const handleLogout = async () => {
     try {
       await logout()
-      router.push("/login")
-      Alert({
+      await notificationService.sendNotification({
         title: "Logout realizado com sucesso!",
-     
+        body: "Você saiu do sistema com segurança.",
       })
-    } catch (error) {
-      Alert({
-        title: "Erro",
-       
-        variant: "destructive",
+      router.push("/login")
+    } catch {
+      await notificationService.sendNotification({
+        title: "Erro ao realizar logout",
+        body: "Tente novamente em instantes ou entre em contato com o suporte.",
+        tag: "logout-erro",
+        requireInteraction: true,
       })
     }
+  }
+
+  const renderUserAvatar = () => (
+    <Avatar className="h-8 w-8">
+      <AvatarImage src={user?.photoURL ?? ""} alt="Avatar" />
+      <AvatarFallback>{getUserInitials(user?.displayName, user?.email)}</AvatarFallback>
+    </Avatar>
+  )
+
+  const getUserInitials = (name?: string | null, email?: string | null) => {
+    return (
+      name?.charAt(0)?.toUpperCase() ??
+      email?.charAt(0)?.toUpperCase() ??
+      "U"
+    )
   }
 
   return (
@@ -54,17 +69,14 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.photoURL || ""} alt="Avatar" />
-                <AvatarFallback>
-                  {user?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              {renderUserAvatar()}
               <span className="sr-only">Menu do usuário</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {user?.displayName ?? user?.email}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />

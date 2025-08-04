@@ -20,69 +20,9 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import Image from "next/image"
 import logo from "@/public/logo.png"
+import { navigation } from "../links/navigation"
 
-const navigation = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: Home,
-    badge: null,
-  },
-  {
-    name: "Financeiro",
-    icon: BarChart3,
-    children: [
-      {
-        name: "Receitas",
-        href: "/receitas",
-        icon: TrendingUp,
-      },
-      {
-        name: "Despesas",
-        href: "/despesas",
-        icon: TrendingDown,
-      },
-      {
-        name: "Dízimos",
-        href: "/dizimos",
-        icon: PiggyBank,
-      },
-      {
-        name: "Ofertas",
-        href: "/ofertas",
-        icon: DollarSign,
-      },
-    ],
-  },
-  {
-    name: "Gestão",
-    icon: Users,
-    children: [
-      {
-        name: "Membros",
-        href: "/membros",
-        icon: Users,
-      },
-       {
-        name: "aniversariantes",
-        href: "/aniversariantes",
-        icon: Users,
-      },
-    ],
-  },
-  {
-    name: "Relatórios",
-    href: "/relatorios",
-    icon: FileText,
-  },
-  {
-    name: "Configurações",
-    href: "/configuracoes",
-    icon: Settings,
-    badge: null,
-  },
-  
-]
+
 
 export function Sidebar() {
   const pathname = usePathname()
