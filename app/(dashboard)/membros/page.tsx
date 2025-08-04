@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -23,7 +22,6 @@ import { useMembros } from "@/src/core/hooks/use-membros"
 import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
 import { toast } from "react-toastify"
 
-
 export default function MembrosPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -39,18 +37,14 @@ export default function MembrosPage() {
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-
   const { membros, loading, addMembro, updateMembro, deleteMembro } = useMembros()
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!formData.nome || !formData.dataCadastro) {
       toast.error("Nome e data de cadastro são obrigatórios.")
       return
     }
-
     try {
       if (editingId) {
         await updateMembro(editingId, formData)
@@ -59,7 +53,6 @@ export default function MembrosPage() {
         await addMembro(formData)
         toast.success("Membro cadastrado com sucesso!")
       }
-
       setFormData({
         nome: "",
         email: "",
@@ -98,11 +91,8 @@ export default function MembrosPage() {
         await deleteMembro(id)
         toast.success("Membro excluído com sucesso!")
       } catch (error) {
-        alert({
-          title: "Erro",
-          description: "Erro ao excluir membro.",
-          variant: "destructive",
-        })
+        // Assuming 'alert' is a custom component or function, replaced with a toast for consistency
+        toast.error("Erro ao excluir membro.")
       }
     }
   }
@@ -111,17 +101,18 @@ export default function MembrosPage() {
     const pdfGenerator = new PDFGenerator()
     pdfGenerator.generateMembersReport(membros)
     pdfGenerator.save(`relatorio-membros-${new Date().toISOString().split("T")[0]}.pdf`)
-
     toast.success("Relatório de membros gerado com sucesso!")
   }
 
-  const filteredMembros = membros.filter((membro) => {
-    const matchesSearch =
-      membro.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (membro.email && membro.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesStatus = statusFilter === "all" || membro.status.toLowerCase() === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const filteredMembros = membros
+    .filter((membro) => {
+      const matchesSearch =
+        membro.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (membro.email && membro.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      const matchesStatus = statusFilter === "all" || membro.status.toLowerCase() === statusFilter
+      return matchesSearch && matchesStatus
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome)) // Adicionado para ordenar alfabeticamente
 
   const stats = {
     total: membros.length,
@@ -217,7 +208,6 @@ export default function MembrosPage() {
                       </Select>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
@@ -239,7 +229,6 @@ export default function MembrosPage() {
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dataNascimento">Data de Nascimento</Label>
@@ -261,7 +250,6 @@ export default function MembrosPage() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="endereco">Endereço</Label>
                     <Input
@@ -271,7 +259,6 @@ export default function MembrosPage() {
                       onChange={(e) => setFormData((prev) => ({ ...prev, endereco: e.target.value }))}
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="observacoes">Observações</Label>
                     <Textarea
@@ -291,7 +278,6 @@ export default function MembrosPage() {
           </Dialog>
         </div>
       </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -340,7 +326,6 @@ export default function MembrosPage() {
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Lista de Membros</CardTitle>
@@ -369,7 +354,6 @@ export default function MembrosPage() {
               </SelectContent>
             </Select>
           </div>
-
           {filteredMembros.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground">
               {membros.length === 0 ? "Nenhum membro cadastrado" : "Nenhum membro encontrado"}
