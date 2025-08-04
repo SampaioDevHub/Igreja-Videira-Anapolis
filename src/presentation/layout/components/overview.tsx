@@ -33,7 +33,7 @@ export function Overview({ receitas, despesas }: OverviewProps) {
           return `${year}-${month}-${day}`
         case "semanal": {
           const firstDay = new Date(date)
-          firstDay.setDate(date.getDate() - date.getDay()) // domingo da semana
+          firstDay.setDate(date.getDate() - date.getDay())
           return `${firstDay.getFullYear()}-W${String(
             Math.ceil((firstDay.getDate() + 6) / 7)
           ).padStart(2, "0")}`
@@ -93,7 +93,6 @@ export function Overview({ receitas, despesas }: OverviewProps) {
 
   return (
     <div>
-      {/* Botões de seleção de período */}
       <div className="flex justify-end gap-2 mb-4">
         {PERIODS.map((p) => (
           <Button
@@ -107,7 +106,6 @@ export function Overview({ receitas, despesas }: OverviewProps) {
         ))}
       </div>
 
-      {/* Gráfico */}
       <ResponsiveContainer width="100%" height={350}>
         <BarChart
           data={data}

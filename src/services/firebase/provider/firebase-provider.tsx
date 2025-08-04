@@ -17,17 +17,13 @@ export function FirebaseProvider({ children }: FirebaseProviderProps) {
         setIsLoading(true)
         setError(null)
 
-        // Check if already initialized
         if (firebaseService.isInitialized()) {
           setIsInitialized(true)
           setIsLoading(false)
           return
         }
-
-        // Initialize Firebase
         await firebaseService.initialize()
 
-        // Additional delay to ensure everything is ready
         await new Promise((resolve) => setTimeout(resolve, 500))
 
         setIsInitialized(true)

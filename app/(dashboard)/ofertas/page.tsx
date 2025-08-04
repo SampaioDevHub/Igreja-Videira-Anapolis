@@ -501,7 +501,6 @@ export default function OfertasPage() {
               </TableHeader>
               <TableBody>
                 {filteredOfertas.map((oferta) => {
-                  // Corrigido: Usar forma de pagamento com fallback
                   const paymentInfo = getPaymentInfo(oferta.formaPagamento || "pix")
                   const IconeComponente = paymentInfo.icon
 

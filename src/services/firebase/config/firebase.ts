@@ -11,7 +11,6 @@ const firebaseConfig = {
   appId: "1:757629213152:web:95e08fa7e16db77db5f385",
 }
 
-// Singleton pattern for Firebase initialization
 class FirebaseService {
   private static instance: FirebaseService
   private app: FirebaseApp | null = null
@@ -40,7 +39,6 @@ class FirebaseService {
         authDomain: firebaseConfig.authDomain,
       })
 
-      // Initialize Firebase App
       if (getApps().length === 0) {
         this.app = initializeApp(firebaseConfig)
         console.log("Firebase app created")
@@ -49,14 +47,13 @@ class FirebaseService {
         console.log("Using existing Firebase app")
       }
 
-      // Wait a bit to ensure app is fully initialized
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // Initialize Auth
+
       this.auth = getAuth(this.app)
       console.log("Firebase Auth initialized")
 
-      // Initialize Firestore
+
       this.db = getFirestore(this.app)
       console.log("Firebase Firestore initialized")
 
@@ -94,10 +91,9 @@ class FirebaseService {
   }
 }
 
-// Export singleton instance
+
 export const firebaseService = FirebaseService.getInstance()
 
-// Convenience exports (will throw if not initialized)
 export const getAuthInstance = () => firebaseService.getAuth()
 export const getFirestoreInstance = () => firebaseService.getFirestore()
 export const getAppInstance = () => firebaseService.getApp()

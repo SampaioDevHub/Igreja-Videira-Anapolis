@@ -24,6 +24,7 @@ import {
   Line,
   Area,
   AreaChart,
+  PieChart,
 } from "recharts"
 import { useReceitas } from "@/src/core/hooks/use-receitas"
 import { useDespesas } from "@/src/core/hooks/use-despesas"
@@ -458,20 +459,32 @@ export default function RelatoriosPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={Object.entries(estatisticas.despesasPorStatus).map(([status, valor]) => ({ status, valor }))}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="status" />
-                    <YAxis tickFormatter={(value) => `R$${value}`} />
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(estatisticas.despesasPorStatus).map(([status, valor]) => ({
+                        name: status,
+                        value: valor,
+                      }))}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={({ name, percent }) =>
+                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      }
+                    >
+                      {Object.keys(estatisticas.despesasPorStatus).map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
                     <Tooltip
-                      formatter={(value) => [
-                        `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-                        "Valor",
-                      ]}
+                      formatter={(value: number) =>
+                        `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      }
                     />
-                    <Bar dataKey="valor" fill="#82ca9d" />
-                  </BarChart>
+                    <Legend />
+                  </PieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -533,13 +546,12 @@ export default function RelatoriosPage() {
                   <div key={status} className="text-center p-4 border rounded-lg">
                     <div className="text-lg font-semibold capitalize">{status}</div>
                     <div
-                      className={`text-2xl font-bold ${
-                        status === "Pago"
+                      className={`text-2xl font-bold ${status === "Pago"
                           ? "text-green-600"
                           : status === "Pendente"
                             ? "text-yellow-600"
                             : "text-red-600"
-                      }`}
+                        }`}
                     >
                       R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </div>
