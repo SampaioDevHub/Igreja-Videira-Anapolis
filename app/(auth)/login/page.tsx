@@ -1,62 +1,80 @@
 "use client"
-import type React from "react"
-import logo from "@/public/logo.png"
+
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
+import ReCAPTCHA from "react-google-recaptcha"
+
+import logo from "@/public/logo.png"
+import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ForgotPasswordModal } from "@/src/presentation/layout/components/ForgotPasswordModal"
 
-import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
-import Image from "next/image"
+const RECAPTCHA_SITE_KEY = "6LeSe5orAAAAAEQF73vFEHquvVZ5tLiYnHkxiiW8"
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email é obrigatório.")
+    .email("Formato de email inválido.")
+    .max(100, "Email muito longo."),
+  password: z
+    .string()
+    .min(8, "A senha deve ter no mínimo 8 caracteres.")
+    .max(100, "Senha muito longa."),
+  recaptchaToken: z.string().min(1, "Confirme que você não é um robô."),
+})
+
+type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [formError, setFormError] = useState("")
+  const [modalOpen, setModalOpen] = useState(false)
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: "onTouched",
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCaptchaChange = (token: string | null) => {
+    setValue("recaptchaToken", token || "")
+  }
+
+  const onSubmit = async (data: LoginFormData) => {
     setLoading(true)
+    setFormError("")
 
     try {
-      await login(email, password)
+      await login(data.email, data.password)
       router.push("/dashboard")
-      alert({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao Sistema Financeiro da Igreja Videira.",
-      })
     } catch (error: any) {
-      let errorMessage = "Email ou senha incorretos."
-
-      if (error.code === "auth/user-not-found") {
-        errorMessage = "Usuário não encontrado."
-      } else if (error.code === "auth/wrong-password") {
-        errorMessage = "Senha incorreta."
-      } else if (error.code === "auth/invalid-email") {
-        errorMessage = "Email inválido."
-      } else if (error.code === "auth/too-many-requests") {
-        errorMessage = "Muitas tentativas. Tente novamente mais tarde."
+      setFormError("Email ou senha inválidos. Verifique e tente novamente.")
+      if (process.env.NODE_ENV === "development") {
+        console.error("Erro ao logar:", error)
       }
-
-      alert({
-        title: "Erro no login",
-        description: errorMessage,
-        variant: "destructive",
-      })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <Image
@@ -67,46 +85,90 @@ export default function LoginPage() {
               className="dark:filter dark:brightness-0 dark:invert"
             />
           </div>
-          <CardTitle className="text-lg text-center">Entrar</CardTitle>
-          <CardDescription className="text-center">
-            Entre com suas credenciais para acessar o sistema financeiro
+          <CardTitle className="text-lg text-center">Acesso Restrito</CardTitle>
+          <CardDescription className="text-center text-muted-foreground">
+            Informe suas credenciais para continuar
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {formError && (
+              <p className="text-sm text-red-500 text-center">{formError}</p>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                autoComplete="email"
+                inputMode="email"
+                spellCheck={false}
+                placeholder="email@dominio.com"
+                {...register("email")}
                 disabled={loading}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
+                inputMode="text"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                {...register("password")}
                 disabled={loading}
+                onPaste={(e) => e.preventDefault()}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.message}</p>
+              )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
+
+            <div>
+              <ReCAPTCHA
+                sitekey={RECAPTCHA_SITE_KEY}
+                onChange={handleCaptchaChange}
+                theme="light"
+              />
+              {errors.recaptchaToken && (
+                <p className="text-sm text-red-500 mt-2">{errors.recaptchaToken.message}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? "Verificando..." : "Login"}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Não tem uma conta?{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              Cadastre-se
-            </Link>
+
+          <div className="mt-4 text-center text-sm space-y-1">
+            <p>
+              Não tem uma conta?{" "}
+              <Link href="/register" className="text-primary hover:underline">
+                Cadastre-se
+              </Link>
+            </p>
+            <div className="mt-4 text-center text-sm">
+              <button
+                className="text-primary hover:underline"
+                onClick={() => setModalOpen(true)}
+                type="button"
+              >
+                Esqueceu sua senha? 
+              </button>
+            </div>
+
+            <ForgotPasswordModal open={modalOpen} onOpenChange={setModalOpen} />
           </div>
         </CardContent>
       </Card>

@@ -21,6 +21,7 @@ import {
 import { Plus, Search, Trash2, Edit } from "lucide-react"
 import { useDespesas } from "@/src/core/hooks/use-despesas"
 import { Alert } from "@/components/ui/alert"
+import { PageContainer } from "@/src/presentation/layout/components/page-container"
 
 
 export default function DespesasPage() {
@@ -139,6 +140,7 @@ export default function DespesasPage() {
   }
 
   return (
+    
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -418,5 +420,6 @@ export default function DespesasPage() {
         </CardContent>
       </Card>
     </div>
+
   )
 }

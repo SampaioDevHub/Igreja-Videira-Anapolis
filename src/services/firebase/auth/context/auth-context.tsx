@@ -9,12 +9,12 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth"
 import { getAuthInstance } from "../../config/firebase"
 import { notificationService } from "../../Modulo-Notification/notification-service"
 import { backupService } from "../../backup/backup-service"
 import { AuthContextType } from "@/src/core/@types/AuthContextType"
-
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -36,15 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(user)
             setLoading(false)
 
-            // Inicializar serviços quando usuário faz login
             if (user) {
-              // Solicitar permissão para notificações
               await notificationService.requestPermission()
-
-              // Iniciar backup automático (a cada 24 horas)
               await backupService.scheduleAutoBackup(user.uid, 24)
-
-              // Notificar login bem-sucedido
               await notificationService.sendNotification({
                 title: "Bem-vindo!",
                 body: "Login realizado com sucesso no Sistema Financeiro",
@@ -62,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       }
     }
-
 
     const timer = setTimeout(initAuth, 100)
 
@@ -108,12 +101,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Novo método para recuperação de senha
+  const sendPasswordResetEmailHandler = async (email: string) => {
+    try {
+      const auth = getAuthInstance()
+      await sendPasswordResetEmail(auth, email)
+      console.log("Password reset email sent to:", email)
+    } catch (error) {
+      console.error("Password reset error:", error)
+      throw error
+    }
+  }
+
   const value = {
     user,
     loading,
     login,
     register,
     logout,
+    sendPasswordResetEmail: sendPasswordResetEmailHandler,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
