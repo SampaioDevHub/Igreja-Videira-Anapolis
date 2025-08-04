@@ -107,7 +107,7 @@ export function Header() {
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-green-500 animate-ping" />
             )}
           </Button>
-          <ModeToggle />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
