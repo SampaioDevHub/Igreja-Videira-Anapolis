@@ -37,9 +37,16 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center gap-3">
-          <Image src={logo} alt="" width={130} height={130}/>
+          <Image
+            src={logo}
+            alt="Logo"
+            width={130}
+            height={130}
+            className="dark:filter dark:brightness-0 dark:invert"
+          />
         </div>
       </div>
+
 
       {/* User Info */}
       <div className="border-b px-6 py-4">
@@ -52,7 +59,7 @@ export function Sidebar() {
           <div className="flex flex-col min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{user?.displayName || "Usuário"}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            
+
           </div>
         </div>
       </div>
@@ -125,7 +132,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t p-4">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Versão BETA v2.1.0</span>
+          <span>Versão BETA v2.2.1</span>
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-full bg-green-500" />
             <span>Online</span>

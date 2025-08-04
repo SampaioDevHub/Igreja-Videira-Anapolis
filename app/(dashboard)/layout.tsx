@@ -17,7 +17,7 @@ export default function DashboardLayout({
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         <div className="hidden border-r bg-muted/40 md:block">
           <Sidebar />
-           <NextTopLoader color="#f97316" showSpinner={false} />
+           <NextTopLoader color="#8b5cf6" showSpinner={false} />
            <ToastContainer position="top-right"  autoClose={3000} />
         </div>
         <div className="flex flex-col">
@@ -28,7 +28,7 @@ export default function DashboardLayout({
           <DebugPanel />
         </div>
       </div>
-      <Script src="//code.jivosite.com/widget/Ii4QOCHqQL" async/>
+      <Script src="//code.jivosite.com/widget/Ii4QOCHqQL" async />
     </AuthGuard>
   )
 }

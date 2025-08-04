@@ -59,9 +59,15 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <Image src={logo} alt="" width={180} height={180}/>
+            <Image
+              src={logo}
+              alt="Logo"
+              width={130}
+              height={130}
+              className="dark:filter dark:brightness-0 dark:invert"
+            />
           </div>
-          <CardTitle className="text-2xl text-center">Entrar</CardTitle>
+          <CardTitle className="text-lg text-center">Entrar</CardTitle>
           <CardDescription className="text-center">
             Entre com suas credenciais para acessar o sistema financeiro
           </CardDescription>
