@@ -1,15 +1,9 @@
 "use client"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Despesa } from "@/src/core/hooks/use-despesas"
-import { Receita } from "@/src/core/hooks/use-receitas"
+import { RecentTransactionsProps } from "@/src/core/@types/props/RecentTransactionsProps"
 
 import { useMemo } from "react"
-
-interface RecentTransactionsProps {
-  receitas: Receita[]
-  despesas: Despesa[]
-}
 
 export function RecentTransactions({ receitas, despesas }: RecentTransactionsProps) {
   const recentTransactions = useMemo(() => {

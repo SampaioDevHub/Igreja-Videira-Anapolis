@@ -5,20 +5,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, o
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
 import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
-
-
-export interface Receita {
-  id: string
-  descricao: string
-  categoria: string
-  valor: number
-  data: string
-  formaPagamento?: string
-  observacoes?: string
-  membro?: string
-  userId: string
-  createdAt: Date
-}
+import { Receita } from "../@types/Receita"
 
 export function useReceitas() {
   const [receitas, setReceitas] = useState<Receita[]>([])

@@ -1,9 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Bell, LogOut, User } from "lucide-react"
 import { useEffect, useState } from "react"
-import Link from "next/link"
 
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "./mode-toggle"
-import { NotificationModal, NotificationData } from "./NotificationModal"
+import { NotificationModal } from "./NotificationModal"
+import { NotificationData } from "@/src/core/@types/NotificationData"
 
 export function Header() {
   const { user, logout } = useAuth()

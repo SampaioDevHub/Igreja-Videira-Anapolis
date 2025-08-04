@@ -13,15 +13,8 @@ import {
 import { getAuthInstance } from "../../config/firebase"
 import { notificationService } from "../../Modulo-Notification/notification-service"
 import { backupService } from "../../backup/backup-service"
+import { AuthContextType } from "@/src/core/@types/AuthContextType"
 
-
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name: string) => Promise<void>
-  logout: () => Promise<void>
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -70,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Small delay to ensure Firebase is fully initialized
+
     const timer = setTimeout(initAuth, 100)
 
     return () => {

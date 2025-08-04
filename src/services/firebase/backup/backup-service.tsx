@@ -1,14 +1,6 @@
 import { collection, getDocs, query, where } from "firebase/firestore"
 import { getFirestoreInstance } from "../config/firebase"
-
-
-export interface BackupData {
-  receitas: any[]
-  despesas: any[]
-  membros: any[]
-  timestamp: string
-  userId: string
-}
+import { BackupData } from "@/src/core/@types/BackupData"
 
 export class BackupService {
   private static instance: BackupService

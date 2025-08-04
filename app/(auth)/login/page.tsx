@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { Church } from "lucide-react"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import Image from "next/image"
 

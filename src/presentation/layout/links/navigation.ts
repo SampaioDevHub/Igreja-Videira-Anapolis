@@ -18,7 +18,7 @@ export const navigation = [
     badge: null,
   },
   {
-    name: "Financeiro",
+    name: "Gestão Financeira ",
     icon: BarChart3,
     children: [
       {
@@ -44,7 +44,7 @@ export const navigation = [
     ],
   },
   {
-    name: "Gestão",
+    name: "Gestão de Membros",
     icon: Users,
     children: [
       {
@@ -53,12 +53,13 @@ export const navigation = [
         icon: Users,
       },
       {
-        name: "aniversariantes",
+        name: "Aniversariantes",
         href: "/aniversariantes",
         icon: Users,
       },
     ],
   },
+  
   {
     name: "Relatórios",
     href: "/relatorios",

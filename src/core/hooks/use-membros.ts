@@ -4,21 +4,7 @@ import { useState, useEffect } from "react"
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
-
-
-export interface Membro {
-  id: string
-  nome: string
-  email?: string
-  telefone?: string
-  endereco?: string
-  dataNascimento?: string
-  dataCadastro: string
-  status: "Ativo" | "Inativo" | "Visitante"
-  observacoes?: string
-  userId: string
-  createdAt: Date
-}
+import { Membro } from "../@types/Membro"
 
 export function useMembros() {
   const [membros, setMembros] = useState<Membro[]>([])

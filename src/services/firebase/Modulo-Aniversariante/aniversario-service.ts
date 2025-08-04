@@ -2,14 +2,7 @@
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from "firebase/firestore"
 import { getFirestoreInstance } from "../config/firebase"
 import { notificationService } from "../Modulo-Notification/notification-service"
-
-export interface AniversarioNotification {
-  membroId: string
-  nome: string
-  idade: number
-  diasRestantes: number
-  notificado: boolean
-}
+import { AniversarioNotification } from "@/src/core/@types/AniversarioNotification"
 
 export class AniversarioService {
   private static instance: AniversarioService

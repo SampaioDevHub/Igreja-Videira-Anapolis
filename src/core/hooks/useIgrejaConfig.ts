@@ -4,21 +4,8 @@ import { useState, useEffect } from "react"
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
+import { IgrejaConfig } from "../@types/IgrejaConfig"
 
-
-export interface IgrejaConfig {
-  id?: string
-  nome: string
-  endereco: string
-  telefone: string
-  email: string
-  pastor: string
-  cnpj: string
-  descricao: string
-  userId: string
-  createdAt: Date
-  updatedAt: Date
-}
 
 export function useIgrejaConfig() {
   const [config, setConfig] = useState<IgrejaConfig>({

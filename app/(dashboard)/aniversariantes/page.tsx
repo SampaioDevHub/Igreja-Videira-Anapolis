@@ -24,8 +24,6 @@ export default function AniversariantesPage() {
     marcarComoParabenizado,
   } = useAniversariantes()
 
-
-
   const handleEnviarParabens = async (membroId: string, nome: string) => {
     try {
       await enviarParabens(membroId)

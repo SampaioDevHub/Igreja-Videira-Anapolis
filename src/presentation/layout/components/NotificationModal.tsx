@@ -4,20 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
-import { useEffect, useState } from "react"
-
-export interface NotificationData {
-  title: string
-  body: string
-  date: string
-}
-
-interface NotificationModalProps {
-  open: boolean
-  onClose: () => void
-  notifications: NotificationData[]
-  onDelete: (index: number) => void
-}
+import { NotificationModalProps } from "@/src/core/@types/props/NotificationModalProps"
 
 export function NotificationModal({
   open,

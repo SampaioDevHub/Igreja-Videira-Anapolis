@@ -31,8 +31,6 @@ export default function ConfiguracoesPage() {
     updateConfig,
   } = useIgrejaConfig()
 
- 
-
   const handleSaveIgrejaConfig = async () => {
     const success = await saveConfig(igrejaConfig)
 

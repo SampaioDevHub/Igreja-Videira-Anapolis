@@ -3,13 +3,7 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 
 import { useMemo } from "react"
-import { Receita } from "@/src/core/hooks/use-receitas"
-import { Despesa } from "@/src/core/hooks/use-despesas"
-
-interface OverviewProps {
-  receitas: Receita[]
-  despesas: Despesa[]
-}
+import { OverviewProps } from "@/src/core/@types/props/OverviewProps"
 
 export function Overview({ receitas, despesas }: OverviewProps) {
   const data = useMemo(() => {

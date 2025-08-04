@@ -6,19 +6,7 @@ import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
 import { doc, getDoc, setDoc } from "firebase/firestore"
 import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
-
-
-export interface Aniversariante {
-  id: string
-  nome: string
-  email?: string
-  telefone?: string
-  dataNascimento: string
-  idade: number
-  diasRestantes: number
-  parabenizado: boolean
-  dataParabens?: string
-}
+import { Aniversariante } from "../@types/Aniversariante"
 
 export function useAniversariantes() {
   const [aniversariantesProximos, setAniversariantesProximos] = useState<Aniversariante[]>([])

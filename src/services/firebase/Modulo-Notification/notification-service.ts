@@ -1,11 +1,4 @@
-export interface NotificationOptions {
-  title: string
-  body: string
-  icon?: string
-  badge?: string
-  tag?: string
-  requireInteraction?: boolean
-}
+import { NotificationOptions } from "@/src/core/@types/NotificationOptions"
 
 export class NotificationService {
   private static instance: NotificationService

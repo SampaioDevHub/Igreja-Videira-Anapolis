@@ -5,18 +5,8 @@ import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, o
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
 import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
+import { Despesa } from "../@types/Despesa"
 
-
-export interface Despesa {
-  id: string
-  descricao: string
-  categoria: string
-  valor: number
-  data: string
-  status: "Pago" | "Pendente" | "Vencido"
-  userId: string
-  createdAt: Date
-}
 
 export function useDespesas() {
   const [despesas, setDespesas] = useState<Despesa[]>([])

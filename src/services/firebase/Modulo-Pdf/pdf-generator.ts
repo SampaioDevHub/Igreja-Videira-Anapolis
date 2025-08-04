@@ -1,17 +1,9 @@
+import { Despesa } from "@/src/core/@types/Despesa"
+import { Membro } from "@/src/core/@types/Membro"
+import { PDFOptions } from "@/src/core/@types/PDFOptions"
+import { Receita } from "@/src/core/@types/Receita"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-
-
-import { Receita } from "@/src/core/hooks/use-receitas"
-import { Despesa } from "@/src/core/hooks/use-despesas"
-import { Membro } from "@/src/core/hooks/use-membros"
-
-interface PDFOptions {
-  title: string
-  subtitle?: string
-  period?: string
-  includeCharts?: boolean
-}
 
 export class PDFGenerator {
   private doc: jsPDF

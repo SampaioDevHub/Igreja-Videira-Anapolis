@@ -4,11 +4,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { Church } from "lucide-react"
 import { firebaseService } from "../config/firebase"
-
-
-interface FirebaseProviderProps {
-  children: React.ReactNode
-}
+import { FirebaseProviderProps } from "@/src/core/@types/props/FirebaseProviderProps"
 
 export function FirebaseProvider({ children }: FirebaseProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false)
