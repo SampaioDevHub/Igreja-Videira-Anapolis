@@ -143,7 +143,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full cursor-pointer"
               disabled={loading}
               aria-busy={loading}
             >
@@ -154,13 +154,13 @@ export default function LoginPage() {
           <div className="mt-4 text-center text-sm space-y-1">
             <p>
               Não tem uma conta?{" "}
-              <Link href="/register" className="text-primary hover:underline">
+              <Link href="/register" className="text-primary hover:underline cursor-pointer">
                 Cadastre-se
               </Link>
             </p>
             <div className="mt-4 text-center text-sm">
               <button
-                className="text-primary hover:underline"
+                className="text-primary hover:underline cursor-pointer"
                 onClick={() => setModalOpen(true)}
                 type="button"
               >
