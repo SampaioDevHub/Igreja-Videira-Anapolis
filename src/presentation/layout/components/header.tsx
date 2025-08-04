@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "./mode-toggle"
+import Link from "next/link"
 
 export function Header() {
   const { user, logout } = useAuth()
@@ -80,7 +81,7 @@ export function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
+              <Link href="/configuracoes">Perfil</Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />

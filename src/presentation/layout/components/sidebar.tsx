@@ -4,15 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  DollarSign,
-  FileText,
-  Home,
-  PiggyBank,
-  Settings,
-  TrendingDown,
-  TrendingUp,
-  Users,
-  BarChart3,
   ChevronDown,
 } from "lucide-react"
 import { useState } from "react"
