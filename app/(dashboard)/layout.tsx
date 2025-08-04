@@ -5,6 +5,7 @@ import { AuthGuard } from "@/src/services/firebase/auth/guard/auth-guard"
 import { DebugPanel } from "@/src/services/firebase/debug/debug-panel"
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import Script from 'next/script';
 
 export default function DashboardLayout({
   children,
@@ -27,6 +28,7 @@ export default function DashboardLayout({
           <DebugPanel />
         </div>
       </div>
+      <Script src="//code.jivosite.com/widget/Ii4QOCHqQL" async/>
     </AuthGuard>
   )
 }
