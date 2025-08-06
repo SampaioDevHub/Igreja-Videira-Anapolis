@@ -1,4 +1,4 @@
-"use client"
+"use client" 
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit, Users, UserCheck, UserX, Eye, FileText } from "lucide-react"
+import { Plus, Search, Trash2, Edit, Users, UserCheck, UserX, Eye, FileText } from 'lucide-react'
 import { useMembros } from "@/src/core/hooks/use-membros"
 import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
 import { toast } from "react-toastify"
@@ -34,6 +34,7 @@ export default function MembrosPage() {
     dataCadastro: new Date().toISOString().split("T")[0],
     status: "Ativo" as "Ativo" | "Inativo" | "Visitante",
     observacoes: "",
+    categoria: "N/A" as "Criança" | "Jovem" | "Adulto" | "N/A", 
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -62,6 +63,7 @@ export default function MembrosPage() {
         dataCadastro: new Date().toISOString().split("T")[0],
         status: "Ativo",
         observacoes: "",
+        categoria: "N/A", // Resetar categoria
       })
       setEditingId(null)
       setOpen(false)
@@ -80,6 +82,7 @@ export default function MembrosPage() {
       dataCadastro: membro.dataCadastro,
       status: membro.status,
       observacoes: membro.observacoes || "",
+      categoria: membro.categoria || "N/A", 
     })
     setEditingId(membro.id)
     setOpen(true)
@@ -91,7 +94,7 @@ export default function MembrosPage() {
         await deleteMembro(id)
         toast.success("Membro excluído com sucesso!")
       } catch (error) {
-        // Assuming 'alert' is a custom component or function, replaced with a toast for consistency
+       
         toast.error("Erro ao excluir membro.")
       }
     }
@@ -112,7 +115,7 @@ export default function MembrosPage() {
       const matchesStatus = statusFilter === "all" || membro.status.toLowerCase() === statusFilter
       return matchesSearch && matchesStatus
     })
-    .sort((a, b) => a.nome.localeCompare(b.nome)) // Adicionado para ordenar alfabeticamente
+    .sort((a, b) => a.nome.localeCompare(b.nome)) 
 
   const stats = {
     total: membros.length,
@@ -158,6 +161,7 @@ export default function MembrosPage() {
                   dataCadastro: new Date().toISOString().split("T")[0],
                   status: "Ativo",
                   observacoes: "",
+                  categoria: "N/A", 
                 })
                 setEditingId(null)
               }
@@ -250,6 +254,27 @@ export default function MembrosPage() {
                       />
                     </div>
                   </div>
+                  {/* seleção para Categoria */}
+                  <div className="space-y-2">
+                    <Label htmlFor="categoria">Categoria</Label>
+                    <Select
+                      value={formData.categoria}
+                      onValueChange={(value: "Criança" | "Jovem" | "Adulto" | "N/A") =>
+                        setFormData((prev) => ({ ...prev, categoria: value }))
+                      }
+                    >
+                      <SelectTrigger id="categoria">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="N/A">Não Aplicável</SelectItem>
+                        <SelectItem value="Criança">Criança</SelectItem>
+                        <SelectItem value="Jovem">Jovem</SelectItem>
+                        <SelectItem value="Adulto">Adulto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Fim do novo campo */}
                   <div className="space-y-2">
                     <Label htmlFor="endereco">Endereço</Label>
                     <Input
@@ -366,6 +391,7 @@ export default function MembrosPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Categoria</TableHead> 
                   <TableHead>Data Cadastro</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -389,6 +415,7 @@ export default function MembrosPage() {
                         {membro.status}
                       </span>
                     </TableCell>
+                    <TableCell>{membro.categoria || "N/A"}</TableCell> 
                     <TableCell>{new Date(membro.dataCadastro).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

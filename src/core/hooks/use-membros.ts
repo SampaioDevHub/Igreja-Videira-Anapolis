@@ -35,7 +35,7 @@ export function useMembros() {
       setMembros(membrosData)
     } catch (error) {
       console.error("Erro ao buscar membros:", error)
-      // Fallback sem orderBy
+     
       try {
         const db = getFirestoreInstance()
         const q = query(collection(db, "membros"), where("userId", "==", user.uid))
@@ -61,7 +61,7 @@ export function useMembros() {
     try {
       const db = getFirestoreInstance()
       const membroData = {
-        ...membro,
+        ...membro, 
         userId: user.uid,
         createdAt: new Date(),
       }
@@ -80,7 +80,7 @@ export function useMembros() {
   const updateMembro = async (id: string, membro: Partial<Membro>) => {
     try {
       const db = getFirestoreInstance()
-      await updateDoc(doc(db, "membros", id), membro)
+      await updateDoc(doc(db, "membros", id), membro) 
       setMembros((prev) => prev.map((m) => (m.id === id ? { ...m, ...membro } : m)))
     } catch (error) {
       console.error("Erro ao atualizar membro:", error)

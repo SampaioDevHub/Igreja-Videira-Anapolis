@@ -86,11 +86,10 @@ export default function ConfiguracoesPage() {
             <div className="space-y-1">
               <h3 className="text-lg font-semibold">{user?.displayName || "Usuário"}</h3>
               <p className="text-muted-foreground">{user?.email}</p>
-              <Button variant="outline" size="sm">
-                Alterar Foto
-              </Button>
+              <Button variant="outline" size="sm">Alterar Foto</Button>
             </div>
           </div>
+
           <Separator />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -280,7 +279,7 @@ export default function ConfiguracoesPage() {
           </Button>
         </CardContent>
       </Card> */}
-      
+
 
       {/* Segurança */}
       {/* <Card>
@@ -340,7 +339,7 @@ export default function ConfiguracoesPage() {
           </Button>
         </CardContent>
       </Card> */}
-      
+
 
       {/* Aparência */}
       <Card>
@@ -400,7 +399,7 @@ export default function ConfiguracoesPage() {
           </div>
         </CardContent>
       </Card> */}
-      
+
 
       {/* Informações da Configuração Atual */}
       {igrejaConfig.nome && (
