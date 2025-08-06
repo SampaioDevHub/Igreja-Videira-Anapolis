@@ -371,21 +371,35 @@ export default function RelatoriosPage() {
                 <CardTitle>Comparativo Geral</CardTitle>
               </CardHeader>
               <CardContent>
+
+
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={barDataComparison}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="categoria" />
-                    <YAxis tickFormatter={(value) => `R$${value}`} />
-                    <Tooltip
-                      formatter={(value) => [
-                        `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-                        "Valor",
-                      ]}
+                    <XAxis
+                      dataKey="categoria"
+                      tick={{ fill: "#6B7280", fontSize: 12 }}
+                      axisLine={{ stroke: "#E5E7EB" }}
+                      tickLine={{ stroke: "#E5E7EB" }}
                     />
+                    <YAxis
+                      tickFormatter={(value) => `R$${value}`}
+                      tick={{ fill: "#6B7280", fontSize: 12 }}
+                      axisLine={{ stroke: "#E5E7EB" }}
+                      tickLine={{ stroke: "#E5E7EB" }}
+                    />
+                    <Tooltip
+                      formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                      labelStyle={{ color: "#4B5563", fontWeight: "bold" }}
+                      contentStyle={{ backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB" }}
+                    />
+
                     <Legend />
-                    <Bar dataKey="valor" fill="#8884d8" />
+                    <Bar dataKey="valor" fill="#4F46E5" barSize={40} radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+
+
               </CardContent>
             </Card>
 
@@ -547,10 +561,10 @@ export default function RelatoriosPage() {
                     <div className="text-lg font-semibold capitalize">{status}</div>
                     <div
                       className={`text-2xl font-bold ${status === "Pago"
-                          ? "text-green-600"
-                          : status === "Pendente"
-                            ? "text-yellow-600"
-                            : "text-red-600"
+                        ? "text-green-600"
+                        : status === "Pendente"
+                          ? "text-yellow-600"
+                          : "text-red-600"
                         }`}
                     >
                       R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}

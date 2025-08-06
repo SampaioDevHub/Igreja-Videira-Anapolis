@@ -34,10 +34,6 @@ class FirebaseService {
     }
 
     try {
-      console.log("Initializing Firebase with config:", {
-        projectId: firebaseConfig.projectId,
-        authDomain: firebaseConfig.authDomain,
-      })
 
       if (getApps().length === 0) {
         this.app = initializeApp(firebaseConfig)
