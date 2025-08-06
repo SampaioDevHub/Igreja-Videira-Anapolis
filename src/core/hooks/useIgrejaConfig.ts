@@ -43,7 +43,6 @@ export function useIgrejaConfig() {
         setConfig(data)
       } else {
         console.log("No igreja config found, using defaults")
-        // Manter valores padrão se não existir configuração
         setConfig((prev) => ({
           ...prev,
           userId: user.uid,

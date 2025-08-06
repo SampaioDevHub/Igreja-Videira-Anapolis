@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff } from 'lucide-react'
 
 
 const RECAPTCHA_SITE_KEY = "6LeSe5orAAAAAEQF73vFEHquvVZ5tLiYnHkxiiW8"
@@ -64,10 +64,8 @@ export default function RegisterPage() {
     try {
       await registerUser(data.email, data.password, data.name)
       router.push("/dashboard")
-      alert({
-        title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao Sistema Financeiro da Igreja Videira.",
-      })
+      // Consider replacing global alert with a toast notification (e.g., using shadcn/ui's useToast)
+      alert("Conta criada com sucesso! Bem-vindo ao Sistema Financeiro da Igreja Videira.") 
     } catch (error: any) {
       let errorMessage = "Erro ao criar conta."
 
@@ -86,124 +84,122 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <Image
-              src={logo}
-              alt="Logo"
-              width={130}
-              height={130}
-              className="dark:filter dark:brightness-0 dark:invert"
+    <Card className="w-full shadow-xl">
+      <CardHeader className="space-y-1">
+        <div className="flex items-center justify-center mb-4">
+          <Image
+            src={logo || "/placeholder.svg"}
+            alt="Logo"
+            width={130}
+            height={130}
+            className="dark:filter dark:brightness-0 dark:invert"
+          />
+        </div>
+        <CardTitle className="text-lg text-center">Criar Conta</CardTitle>
+        <CardDescription className="text-center text-muted-foreground">
+          Cadastre-se para acessar o sistema financeiro
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {formError && <p className="text-sm text-red-500 text-center">{formError}</p>}
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome Completo</Label>
+            <Input
+              id="name"
+              type="text"
+              autoComplete="name"
+              {...register("name")}
+              disabled={loading}
             />
+            {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
           </div>
-          <CardTitle className="text-lg text-center">Criar Conta</CardTitle>
-          <CardDescription className="text-center text-muted-foreground">
-            Cadastre-se para acessar o sistema financeiro
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {formError && <p className="text-sm text-red-500 text-center">{formError}</p>}
-
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input
-                id="name"
-                type="text"
-                autoComplete="name"
-                {...register("name")}
-                disabled={loading}
-              />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                {...register("email")}
-                disabled={loading}
-              />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  {...register("password")}
-                  disabled={loading}
-                  onPaste={(e) => e.preventDefault()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  tabIndex={-1}
-                >
-
-                </button>
-              </div>
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  {...register("confirmPassword")}
-                  disabled={loading}
-                  onPaste={(e) => e.preventDefault()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  tabIndex={-1}
-                >
-
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            <div>
-              <ReCAPTCHA
-                sitekey={RECAPTCHA_SITE_KEY}
-                onChange={handleCaptchaChange}
-                theme="light"
-              />
-              {errors.recaptchaToken && (
-                <p className="text-sm text-red-500 mt-2">{errors.recaptchaToken.message}</p>
-              )}
-            </div>
-
-            <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
-              {loading ? "Criando conta..." : "Criar Conta"}
-            </Button>
-          </form>
-
-          <div className="mt-4 text-center text-sm">
-            Já tem uma conta?{" "}
-            <Link href="/login" className="text-primary hover:underline cursor-pointer">
-              Entrar
-            </Link>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              {...register("email")}
+              disabled={loading}
+            />
+            {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                {...register("password")}
+                disabled={loading}
+                onPaste={(e) => e.preventDefault()}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
+                {...register("confirmPassword")}
+                disabled={loading}
+                onPaste={(e) => e.preventDefault()}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          <div>
+            <ReCAPTCHA
+              sitekey={RECAPTCHA_SITE_KEY}
+              onChange={handleCaptchaChange}
+              theme="light"
+            />
+            {errors.recaptchaToken && (
+              <p className="text-sm text-red-500 mt-2">{errors.recaptchaToken.message}</p>
+            )}
+          </div>
+
+          <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
+            {loading ? "Criando conta..." : "Criar Conta"}
+          </Button>
+        </form>
+
+        <div className="mt-4 text-center text-sm">
+          Já tem uma conta?{" "}
+          <Link href="/login" className="text-primary hover:underline cursor-pointer">
+            Entrar
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
