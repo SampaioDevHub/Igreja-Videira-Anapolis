@@ -7,8 +7,8 @@ export interface Membro {
   dataNascimento?: string
   dataCadastro: string
   status: "Ativo" | "Inativo" | "Visitante"
-  categoria?: "Criança" | "Jovem" | "Adulto" | "N/A"
   observacoes?: string
   userId: string
   createdAt: Date
+  categoria?: string
 }

@@ -18,11 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit } from "lucide-react"
+import { Plus, Search, Trash2, Edit, Settings } from 'lucide-react' 
 import { useDespesas } from "@/src/core/hooks/use-despesas"
-import { Alert } from "@/components/ui/alert"
-import { PageContainer } from "@/src/presentation/layout/components/page-container"
-
+import { useCategories } from "@/src/core/hooks/use-categories" 
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription
+} from "@/components/ui/alert"
 
 export default function DespesasPage() {
   const [open, setOpen] = useState(false)
@@ -39,6 +42,13 @@ export default function DespesasPage() {
   const [statusFilter, setStatusFilter] = useState("all")
 
   const { despesas, loading, addDespesa, updateDespesa, deleteDespesa } = useDespesas()
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
+  const { categories, loading: categoriesLoading, addCategory, updateCategory, deleteCategory } = useCategories("despesaCategories") // Usar o hook genérico com nome da coleção
+
+  const defaultCategories = ["Utilidades", "Pessoal", "Manutenção", "Infraestrutura", "Ministérios", "Água", "Luz", "Energia", "Combustível", "Outros"]
+  const allCategories = [...defaultCategories, ...categories.map(cat => cat.name)]
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,9 +127,48 @@ export default function DespesasPage() {
     }
   }
 
+
+  const handleAddOrUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCategoryName.trim()) {
+      Alert({ title: "O nome da categoria não pode ser vazio.", variant: "destructive" })
+      return
+    }
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, newCategoryName)
+        Alert({ title: "Categoria atualizada com sucesso!" })
+      } else {
+        await addCategory(newCategoryName)
+        Alert({ title: "Categoria adicionada com sucesso!" })
+      }
+      setNewCategoryName("")
+      setEditingCategory(null)
+    } catch (error) {
+      Alert({ title: "Erro ao salvar categoria.", variant: "destructive" })
+    }
+  }
+
+  const handleEditCategory = (category: { id: string; name: string }) => {
+    setNewCategoryName(category.name)
+    setEditingCategory(category)
+  }
+
+  const handleDeleteCategory = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+      try {
+        await deleteCategory(id)
+        Alert({ title: "Categoria excluída com sucesso!" })
+      } catch (error) {
+        Alert({ title: "Erro ao excluir categoria.", variant: "destructive" })
+      }
+    }
+  }
+
+
   const filteredDespesas = despesas.filter((despesa) => {
     const matchesSearch = despesa.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || despesa.categoria.toLowerCase() === categoryFilter
+    const matchesCategory = categoryFilter === "all" || despesa.categoria.toLowerCase() === categoryFilter.toLowerCase()
     const matchesStatus = statusFilter === "all" || despesa.status.toLowerCase() === statusFilter
     return matchesSearch && matchesCategory && matchesStatus
   })
@@ -131,7 +180,7 @@ export default function DespesasPage() {
     vencidas: despesas.filter((d) => d.status === "Vencido").reduce((sum, d) => sum + d.valor, 0),
   }
 
-  if (loading) {
+  if (loading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -147,121 +196,181 @@ export default function DespesasPage() {
           <h1 className="text-3xl font-bold tracking-tight">Despesas</h1>
           <p className="text-muted-foreground">Controle todas as despesas da igreja</p>
         </div>
-        <Dialog
-          open={open}
-          onOpenChange={(isOpen) => {
-            setOpen(isOpen)
-            if (!isOpen) {
-              setFormData({ descricao: "", categoria: "", valor: "", data: "", status: "Pendente" })
-              setEditingId(null)
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Despesa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Editar Despesa" : "Nova Despesa"}</DialogTitle>
-              <DialogDescription>
-                {editingId ? "Edite os dados da despesa." : "Registre uma nova despesa no sistema."}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="descricao" className="text-right">
-                    Descrição
-                  </Label>
+        <div className="flex gap-2">
+          {/* Diálogo para Gerenciar Categorias de Despesas */}
+          <Dialog
+            open={categoryDialogOpen}
+            onOpenChange={(isOpen) => {
+              setCategoryDialogOpen(isOpen)
+              if (!isOpen) {
+                setNewCategoryName("")
+                setEditingCategory(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Categorias
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Gerenciar Categorias de Despesas</DialogTitle>
+                <DialogDescription>Adicione, edite ou remova categorias personalizadas para despesas.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddOrUpdateCategory} className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newCategoryName">Nome da Categoria</Label>
                   <Input
-                    id="descricao"
-                    placeholder="Descrição da despesa"
-                    className="col-span-3"
-                    value={formData.descricao}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
+                    id="newCategoryName"
+                    placeholder="Ex: Aluguel, Salários, etc."
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    required
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="categoria" className="text-right">
-                    Categoria
-                  </Label>
-                  <Select
-                    value={formData.categoria}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria: value }))}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="utilidades">Utilidades</SelectItem>
-                      <SelectItem value="pessoal">Pessoal</SelectItem>
-                      <SelectItem value="manutencao">Manutenção</SelectItem>
-                      <SelectItem value="infraestrutura">Infraestrutura</SelectItem>
-                      <SelectItem value="ministerios">Ministérios</SelectItem>
-                      <SelectItem value="agua ">Agua</SelectItem>
-                      <SelectItem value="luz ">Luz</SelectItem>
-                      <SelectItem value="energia">Energia</SelectItem>
-                      <SelectItem value="combustivel">Combustivel</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="valor" className="text-right">
-                    Valor
-                  </Label>
-                  <Input
-                    id="valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    className="col-span-3"
-                    value={formData.valor}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="data" className="text-right">
-                    Data
-                  </Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    className="col-span-3"
-                    value={formData.data}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="status" className="text-right">
-                    Status
-                  </Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: "Pago" | "Pendente" | "Vencido") =>
-                      setFormData((prev) => ({ ...prev, status: value }))
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Status do pagamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pago">Pago</SelectItem>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                      <SelectItem value="Vencido">Vencido</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Button type="submit">
+                  {editingCategory ? "Atualizar Categoria" : "Adicionar Categoria"}
+                </Button>
+              </form>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Categorias Existentes</h3>
+                {categories.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Nenhuma categoria personalizada adicionada.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {categories.map((cat) => (
+                      <li key={cat.id} className="flex items-center justify-between py-2">
+                        <span>{cat.name}</span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(cat)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <DialogFooter>
-                <Button type="submit">{editingId ? "Atualizar Despesa" : "Salvar Despesa"}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo para Nova/Editar Despesa */}
+          <Dialog
+            open={open}
+            onOpenChange={(isOpen) => {
+              setOpen(isOpen)
+              if (!isOpen) {
+                setFormData({ descricao: "", categoria: "", valor: "", data: "", status: "Pendente" })
+                setEditingId(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Despesa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Editar Despesa" : "Nova Despesa"}</DialogTitle>
+                <DialogDescription>
+                  {editingId ? "Edite os dados da despesa." : "Registre uma nova despesa no sistema."}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="descricao" className="text-right">
+                      Descrição
+                    </Label>
+                    <Input
+                      id="descricao"
+                      placeholder="Descrição da despesa"
+                      className="col-span-3"
+                      value={formData.descricao}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="categoria" className="text-right">
+                      Categoria
+                    </Label>
+                    <Select
+                      value={formData.categoria}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria: value }))}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allCategories.map((catName) => (
+                          <SelectItem key={catName} value={catName}>
+                            {catName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="valor" className="text-right">
+                      Valor
+                    </Label>
+                    <Input
+                      id="valor"
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="col-span-3"
+                      value={formData.valor}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="data" className="text-right">
+                      Data
+                    </Label>
+                    <Input
+                      id="data"
+                      type="date"
+                      className="col-span-3"
+                      value={formData.data}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="status" className="text-right">
+                      Status
+                    </Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: "Pago" | "Pendente" | "Vencido") =>
+                        setFormData((prev) => ({ ...prev, status: value }))
+                      }
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Status do pagamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pago">Pago</SelectItem>
+                        <SelectItem value="Pendente">Pendente</SelectItem>
+                        <SelectItem value="Vencido">Vencido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingId ? "Atualizar Despesa" : "Salvar Despesa"}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -339,17 +448,11 @@ export default function DespesasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="utilidades">Utilidades</SelectItem>
-                <SelectItem value="pessoal">Pessoal</SelectItem>
-                <SelectItem value="manutencao">Manutenção</SelectItem>
-                <SelectItem value="infraestrutura">Infraestrutura</SelectItem>
-                <SelectItem value="ministerios">Ministérios</SelectItem>
-                <SelectItem value="agua ">Agua</SelectItem>
-                <SelectItem value="luz ">Luz</SelectItem>
-                <SelectItem value="energia">Energia</SelectItem>
-                <SelectItem value="combustivel">Combustivel</SelectItem>
-                <SelectItem value="outros">Outros</SelectItem>
-
+                {allCategories.map((catName) => (
+                  <SelectItem key={catName} value={catName}>
+                    {catName}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

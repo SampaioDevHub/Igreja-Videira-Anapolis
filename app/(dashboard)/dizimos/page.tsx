@@ -18,20 +18,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Plus,
-  Search,
-  Trash2,
-  Edit,
-  PiggyBank,
-  TrendingUp,
-  Users,
-  Calendar,
-  QrCode,
-} from "lucide-react"
+import { Plus, Search, Trash2, Edit, PiggyBank, TrendingUp, Users, Calendar, QrCode, Banknote, CreditCard, Smartphone, Settings } from 'lucide-react'
 import { useReceitas } from "@/src/core/hooks/use-receitas"
+import { useCategories } from "@/src/core/hooks/use-categories"
 import { toast } from 'react-toastify'
-import { formasPagamento } from "./dizimosPagamento"
 
 
 export default function DizimosPage() {
@@ -50,6 +40,62 @@ export default function DizimosPage() {
   const [paymentFilter, setPaymentFilter] = useState("all")
 
   const { receitas, loading, addReceita, updateReceita, deleteReceita } = useReceitas()
+  const [paymentMethodDialogOpen, setPaymentMethodDialogOpen] = useState(false)
+  const [newPaymentMethodName, setNewPaymentMethodName] = useState("")
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<{ id: string; name: string } | null>(null)
+  const { categories: customPaymentMethods, loading: customPaymentMethodsLoading, addCategory: addCustomPaymentMethod, updateCategory: updateCustomPaymentMethod, deleteCategory: deleteCustomPaymentMethod } = useCategories("paymentMethods") // Usar a mesma coleção de formas de pagamento das ofertas
+
+  const defaultPaymentMethods = [
+    {
+      value: "pix",
+      label: "PIX",
+      icon: QrCode,
+      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      iconColor: "text-green-600",
+    },
+    {
+      value: "cartao-debito",
+      label: "Cartão de Débito",
+      icon: CreditCard,
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+      iconColor: "text-blue-600",
+    },
+    {
+      value: "cartao-credito",
+      label: "Cartão de Crédito",
+      icon: CreditCard,
+      color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+      iconColor: "text-purple-600",
+    },
+    {
+      value: "dinheiro",
+      label: "Dinheiro",
+      icon: Banknote,
+      color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+      iconColor: "text-yellow-600",
+    },
+    {
+      value: "transferencia",
+      label: "Transferência",
+      icon: Smartphone,
+      color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+      iconColor: "text-indigo-600",
+    },
+  ]
+
+  const allPaymentMethods = useMemo(() => {
+    const customMapped = customPaymentMethods.map(pm => ({
+      value: pm.name.toLowerCase().replace(/\s/g, '-'), 
+      label: pm.name,
+      icon: Banknote, 
+      color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+      iconColor: "text-gray-600",
+    }));
+    
+    const combined = [...defaultPaymentMethods.filter(dp => !customMapped.some(cm => cm.value === dp.value)), ...customMapped];
+    return combined;
+  }, [defaultPaymentMethods, customPaymentMethods]);
+
 
   // Filtrar apenas dízimos
   const dizimos = useMemo(() => {
@@ -130,6 +176,45 @@ export default function DizimosPage() {
     }
   }
 
+  // Funções para gerenciar formas de pagamento personalizadas
+  const handleAddOrUpdatePaymentMethod = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newPaymentMethodName.trim()) {
+      toast.error("O nome da forma de pagamento não pode ser vazio.")
+      return
+    }
+    try {
+      if (editingPaymentMethod) {
+        await updateCustomPaymentMethod(editingPaymentMethod.id, newPaymentMethodName)
+        toast.success("Forma de pagamento atualizada com sucesso!")
+      } else {
+        await addCustomPaymentMethod(newPaymentMethodName)
+        toast.success("Forma de pagamento adicionada com sucesso!")
+      }
+      setNewPaymentMethodName("")
+      setEditingPaymentMethod(null)
+    } catch (error) {
+      toast.error("Erro ao salvar forma de pagamento.")
+    }
+  }
+
+  const handleEditPaymentMethod = (method: { id: string; name: string }) => {
+    setNewPaymentMethodName(method.name)
+    setEditingPaymentMethod(method)
+  }
+
+  const handleDeletePaymentMethod = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta forma de pagamento?")) {
+      try {
+        await deleteCustomPaymentMethod(id)
+        toast.success("Forma de pagamento excluída com sucesso!")
+      } catch (error) {
+        toast.error("Erro ao excluir forma de pagamento.")
+      }
+    }
+  }
+
+
   const filteredDizimos = dizimos.filter((dizimo) => {
     const matchesSearch = dizimo.descricao.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesMonth = monthFilter === "all" || new Date(dizimo.data).getMonth() === Number.parseInt(monthFilter)
@@ -183,17 +268,17 @@ export default function DizimosPage() {
 
   const getPaymentInfo = (formaPagamento: string) => {
     return (
-      formasPagamento.find((fp) => fp.value === formaPagamento) || {
-        value: "pix",
-        label: "PIX",
-        icon: QrCode,
-        color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-        iconColor: "text-green-600",
+      allPaymentMethods.find((fp) => fp.value === formaPagamento) || {
+        value: "outros", // Fallback para formas de pagamento desconhecidas
+        label: formaPagamento, // Usa o valor real como label
+        icon: Banknote, // Ícone padrão
+        color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+        iconColor: "text-gray-600",
       }
-    )
-  }
+    );
+  };
 
-  if (loading) {
+  if (loading || customPaymentMethodsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -213,128 +298,193 @@ export default function DizimosPage() {
             Gerencie todos os dízimos da igreja com controle de formas de pagamento
           </p>
         </div>
-        <Dialog
-          open={open}
-          onOpenChange={(isOpen) => {
-            setOpen(isOpen)
-            if (!isOpen) {
-              setFormData({
-                descricao: "",
-                valor: "",
-                data: "",
-                membro: "",
-                formaPagamento: "",
-                observacoes: "",
-              })
-              setEditingId(null)
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Registrar Dízimo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Editar Dízimo" : "Registrar Dízimo"}</DialogTitle>
-              <DialogDescription>
-                {editingId ? "Edite os dados do dízimo." : "Registre um novo dízimo no sistema."}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="membro" className="text-right">
-                    Membro *
-                  </Label>
+        <div className="flex gap-2">
+          {/* Diálogo para Gerenciar Formas de Pagamento */}
+          <Dialog
+            open={paymentMethodDialogOpen}
+            onOpenChange={(isOpen) => {
+              setPaymentMethodDialogOpen(isOpen)
+              if (!isOpen) {
+                setNewPaymentMethodName("")
+                setEditingPaymentMethod(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Formas de Pagamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Gerenciar Formas de Pagamento</DialogTitle>
+                <DialogDescription>Adicione, edite ou remova formas de pagamento personalizadas.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddOrUpdatePaymentMethod} className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newPaymentMethodName">Nome da Forma de Pagamento</Label>
                   <Input
-                    id="membro"
-                    placeholder="Nome do membro"
-                    className="col-span-3"
-                    value={formData.membro}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, membro: e.target.value }))}
+                    id="newPaymentMethodName"
+                    placeholder="Ex: Boleto, Cheque, etc."
+                    value={newPaymentMethodName}
+                    onChange={(e) => setNewPaymentMethodName(e.target.value)}
                     required
                   />
                 </div>
-
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="valor" className="text-right">
-                    Valor *
-                  </Label>
-                  <Input
-                    id="valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    className="col-span-3"
-                    value={formData.valor}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="data" className="text-right">
-                    Data *
-                  </Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    className="col-span-3"
-                    value={formData.data}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="formaPagamento" className="text-right">
-                    Forma de Pagamento *
-                  </Label>
-                  <Select
-                    value={formData.formaPagamento}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, formaPagamento: value }))}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione a forma de pagamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formasPagamento.map((forma) => {
-                        const IconeComponente = forma.icon
-                        return (
-                          <SelectItem key={forma.value} value={forma.value}>
-                            <div className="flex items-center gap-2">
-                              <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
-                              {forma.label}
-                            </div>
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="observacoes" className="text-right mt-2">
-                    Observações
-                  </Label>
-                  <Input
-                    id="observacoes"
-                    placeholder="Observações adicionais (opcional)"
-                    className="col-span-3"
-                    value={formData.observacoes}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, observacoes: e.target.value }))}
-                  />
-                </div>
+                <Button type="submit">
+                  {editingPaymentMethod ? "Atualizar Forma" : "Adicionar Forma"}
+                </Button>
+              </form>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Formas Existentes</h3>
+                {customPaymentMethods.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Nenhuma forma de pagamento personalizada adicionada.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {customPaymentMethods.map((method) => (
+                      <li key={method.id} className="flex items-center justify-between py-2">
+                        <span>{method.name}</span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditPaymentMethod(method)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDeletePaymentMethod(method.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <DialogFooter>
-                <Button type="submit">{editingId ? "Atualizar Dízimo" : "Registrar Dízimo"}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo para Registrar/Editar Dízimo */}
+          <Dialog
+            open={open}
+            onOpenChange={(isOpen) => {
+              setOpen(isOpen)
+              if (!isOpen) {
+                setFormData({
+                  descricao: "",
+                  valor: "",
+                  data: "",
+                  membro: "",
+                  formaPagamento: "",
+                  observacoes: "",
+                })
+                setEditingId(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Registrar Dízimo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Editar Dízimo" : "Registrar Dízimo"}</DialogTitle>
+                <DialogDescription>
+                  {editingId ? "Edite os dados do dízimo." : "Registre um novo dízimo no sistema."}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="membro" className="text-right">
+                      Membro *
+                    </Label>
+                    <Input
+                      id="membro"
+                      placeholder="Nome do membro"
+                      className="col-span-3"
+                      value={formData.membro}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, membro: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="valor" className="text-right">
+                      Valor *
+                    </Label>
+                    <Input
+                      id="valor"
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="col-span-3"
+                      value={formData.valor}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="data" className="text-right">
+                      Data *
+                    </Label>
+                    <Input
+                      id="data"
+                      type="date"
+                      className="col-span-3"
+                      value={formData.data}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="formaPagamento" className="text-right">
+                      Forma de Pagamento *
+                    </Label>
+                    <Select
+                      value={formData.formaPagamento}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, formaPagamento: value }))}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione a forma de pagamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allPaymentMethods.map((forma) => {
+                          const IconeComponente = forma.icon
+                          return (
+                            <SelectItem key={forma.value} value={forma.value}>
+                              <div className="flex items-center gap-2">
+                                <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
+                                {forma.label}
+                              </div>
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="observacoes" className="text-right mt-2">
+                      Observações
+                    </Label>
+                    <Input
+                      id="observacoes"
+                      placeholder="Observações adicionais (opcional)"
+                      className="col-span-3"
+                      value={formData.observacoes}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, observacoes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingId ? "Atualizar Dízimo" : "Registrar Dízimo"}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Cards de Estatísticas */}
@@ -396,7 +546,7 @@ export default function DizimosPage() {
 
       {/* Cards de Formas de Pagamento */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {formasPagamento.map((forma) => {
+        {allPaymentMethods.map((forma) => {
           const valor = stats.porFormaPagamento[forma.value] || 0
           const IconeComponente = forma.icon
           const percentual = stats.totalGeral > 0 ? (valor / stats.totalGeral) * 100 : 0
@@ -460,7 +610,7 @@ export default function DizimosPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as formas</SelectItem>
-                {formasPagamento.map((forma) => {
+                {allPaymentMethods.map((forma) => {
                   const IconeComponente = forma.icon
                   return (
                     <SelectItem key={forma.value} value={forma.value}>

@@ -35,7 +35,7 @@ export function useMembros() {
       setMembros(membrosData)
     } catch (error) {
       console.error("Erro ao buscar membros:", error)
-     
+      
       try {
         const db = getFirestoreInstance()
         const q = query(collection(db, "membros"), where("userId", "==", user.uid))

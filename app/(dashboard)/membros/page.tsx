@@ -1,4 +1,4 @@
-"use client" 
+"use client"
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,8 +17,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit, Users, UserCheck, UserX, Eye, FileText } from 'lucide-react'
+import { Plus, Search, Trash2, Edit, Users, UserCheck, UserX, Eye, FileText, Settings } from 'lucide-react' // Adicionado Settings icon
 import { useMembros } from "@/src/core/hooks/use-membros"
+import { useMemberCategories } from "@/src/core/hooks/use-member-categories" 
 import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
 import { toast } from "react-toastify"
 
@@ -34,11 +35,19 @@ export default function MembrosPage() {
     dataCadastro: new Date().toISOString().split("T")[0],
     status: "Ativo" as "Ativo" | "Inativo" | "Visitante",
     observacoes: "",
-    categoria: "N/A" as "Criança" | "Jovem" | "Adulto" | "N/A", 
+    categoria: "N/A" as string, // Alterado para string
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const { membros, loading, addMembro, updateMembro, deleteMembro } = useMembros()
+
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
+  const { categories, loading: categoriesLoading, addCategory, updateCategory, deleteCategory } = useMemberCategories()
+
+  const defaultCategories = ["N/A", "Criança", "Jovem", "Adulto"]
+  const allCategories = [...defaultCategories, ...categories.map(cat => cat.name)]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,7 +72,7 @@ export default function MembrosPage() {
         dataCadastro: new Date().toISOString().split("T")[0],
         status: "Ativo",
         observacoes: "",
-        categoria: "N/A", // Resetar categoria
+        categoria: "N/A",
       })
       setEditingId(null)
       setOpen(false)
@@ -82,7 +91,7 @@ export default function MembrosPage() {
       dataCadastro: membro.dataCadastro,
       status: membro.status,
       observacoes: membro.observacoes || "",
-      categoria: membro.categoria || "N/A", 
+      categoria: membro.categoria || "N/A",
     })
     setEditingId(membro.id)
     setOpen(true)
@@ -94,7 +103,6 @@ export default function MembrosPage() {
         await deleteMembro(id)
         toast.success("Membro excluído com sucesso!")
       } catch (error) {
-       
         toast.error("Erro ao excluir membro.")
       }
     }
@@ -107,6 +115,44 @@ export default function MembrosPage() {
     toast.success("Relatório de membros gerado com sucesso!")
   }
 
+  // Funções para gerenciar categorias personalizadas
+  const handleAddOrUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCategoryName.trim()) {
+      toast.error("O nome da categoria não pode ser vazio.")
+      return
+    }
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, newCategoryName)
+        toast.success("Categoria atualizada com sucesso!")
+      } else {
+        await addCategory(newCategoryName)
+        toast.success("Categoria adicionada com sucesso!")
+      }
+      setNewCategoryName("")
+      setEditingCategory(null)
+    } catch (error) {
+      toast.error("Erro ao salvar categoria.")
+    }
+  }
+
+  const handleEditCategory = (category: { id: string; name: string }) => {
+    setNewCategoryName(category.name)
+    setEditingCategory(category)
+  }
+
+  const handleDeleteCategory = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+      try {
+        await deleteCategory(id)
+        toast.success("Categoria excluída com sucesso!")
+      } catch (error) {
+        toast.error("Erro ao excluir categoria.")
+      }
+    }
+  }
+
   const filteredMembros = membros
     .filter((membro) => {
       const matchesSearch =
@@ -115,7 +161,7 @@ export default function MembrosPage() {
       const matchesStatus = statusFilter === "all" || membro.status.toLowerCase() === statusFilter
       return matchesSearch && matchesStatus
     })
-    .sort((a, b) => a.nome.localeCompare(b.nome)) 
+    .sort((a, b) => a.nome.localeCompare(b.nome))
 
   const stats = {
     total: membros.length,
@@ -124,7 +170,7 @@ export default function MembrosPage() {
     visitantes: membros.filter((m) => m.status === "Visitante").length,
   }
 
-  if (loading) {
+  if (loading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -147,6 +193,70 @@ export default function MembrosPage() {
             <FileText className="mr-2 h-4 w-4" />
             Relatório PDF
           </Button>
+
+          {/* Diálogo para Gerenciar Categorias */}
+          <Dialog
+            open={categoryDialogOpen}
+            onOpenChange={(isOpen) => {
+              setCategoryDialogOpen(isOpen)
+              if (!isOpen) {
+                setNewCategoryName("")
+                setEditingCategory(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Categorias
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Gerenciar Categorias</DialogTitle>
+                <DialogDescription>Adicione, edite ou remova categorias personalizadas para membros.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddOrUpdateCategory} className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newCategoryName">Nome da Categoria</Label>
+                  <Input
+                    id="newCategoryName"
+                    placeholder="Ex: Voluntário, Liderança, etc."
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit">
+                  {editingCategory ? "Atualizar Categoria" : "Adicionar Categoria"}
+                </Button>
+              </form>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Categorias Existentes</h3>
+                {categories.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Nenhuma categoria personalizada adicionada.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {categories.map((cat) => (
+                      <li key={cat.id} className="flex items-center justify-between py-2">
+                        <span>{cat.name}</span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(cat)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo para Novo/Editar Membro */}
           <Dialog
             open={open}
             onOpenChange={(isOpen) => {
@@ -161,7 +271,7 @@ export default function MembrosPage() {
                   dataCadastro: new Date().toISOString().split("T")[0],
                   status: "Ativo",
                   observacoes: "",
-                  categoria: "N/A", 
+                  categoria: "N/A",
                 })
                 setEditingId(null)
               }
@@ -254,12 +364,12 @@ export default function MembrosPage() {
                       />
                     </div>
                   </div>
-                  {/* seleção para Categoria */}
+                  {/* Campo de seleção para Categoria (agora com categorias personalizadas) */}
                   <div className="space-y-2">
                     <Label htmlFor="categoria">Categoria</Label>
                     <Select
                       value={formData.categoria}
-                      onValueChange={(value: "Criança" | "Jovem" | "Adulto" | "N/A") =>
+                      onValueChange={(value: string) =>
                         setFormData((prev) => ({ ...prev, categoria: value }))
                       }
                     >
@@ -267,14 +377,15 @@ export default function MembrosPage() {
                         <SelectValue placeholder="Selecione a categoria" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="N/A">Não Aplicável</SelectItem>
-                        <SelectItem value="Criança">Criança</SelectItem>
-                        <SelectItem value="Jovem">Jovem</SelectItem>
-                        <SelectItem value="Adulto">Adulto</SelectItem>
+                        {allCategories.map((catName) => (
+                          <SelectItem key={catName} value={catName}>
+                            {catName}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* Fim do novo campo */}
+                  {/* Fim do campo de categoria */}
                   <div className="space-y-2">
                     <Label htmlFor="endereco">Endereço</Label>
                     <Input
@@ -391,7 +502,7 @@ export default function MembrosPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Categoria</TableHead> 
+                  <TableHead>Categoria</TableHead> {/* Nova coluna */}
                   <TableHead>Data Cadastro</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -415,7 +526,7 @@ export default function MembrosPage() {
                         {membro.status}
                       </span>
                     </TableCell>
-                    <TableCell>{membro.categoria || "N/A"}</TableCell> 
+                    <TableCell>{membro.categoria || "N/A"}</TableCell> {/* Exibir categoria */}
                     <TableCell>{new Date(membro.dataCadastro).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

@@ -49,7 +49,6 @@ export function useDespesas() {
           ...doc.data(),
         })) as Despesa[]
 
-        // Ordenar manualmente por data
         despesasData.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
 
         console.log(`Loaded ${despesasData.length} despesas without orderBy`)

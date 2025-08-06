@@ -18,9 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit } from "lucide-react"
+import { Plus, Search, Trash2, Edit, Settings } from 'lucide-react' // Adicionado Settings icon
 import { useReceitas } from "@/src/core/hooks/use-receitas"
-import { Alert } from "@/components/ui/alert"
+import { useCategories } from "@/src/core/hooks/use-categories" // Importar o hook genérico
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription
+} from "@/components/ui/alert"
 
 
 export default function ReceitasPage() {
@@ -36,6 +41,15 @@ export default function ReceitasPage() {
   const [categoryFilter, setCategoryFilter] = useState("all")
 
   const { receitas, loading, addReceita, updateReceita, deleteReceita } = useReceitas()
+
+  // Novos estados e hooks para categorias personalizadas de receitas
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
+  const { categories, loading: categoriesLoading, addCategory, updateCategory, deleteCategory } = useCategories("receitaCategories") // Usar o hook genérico com nome da coleção
+
+  const defaultCategories = ["Dízimo", "Oferta", "Doação", "Outros"]
+  const allCategories = [...defaultCategories, ...categories.map(cat => cat.name)]
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,9 +126,48 @@ export default function ReceitasPage() {
     }
   }
 
+  // Funções para gerenciar categorias personalizadas de receitas
+  const handleAddOrUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCategoryName.trim()) {
+      Alert({ title: "O nome da categoria não pode ser vazio.", variant: "destructive" })
+      return
+    }
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, newCategoryName)
+        Alert({ title: "Categoria atualizada com sucesso!" })
+      } else {
+        await addCategory(newCategoryName)
+        Alert({ title: "Categoria adicionada com sucesso!" })
+      }
+      setNewCategoryName("")
+      setEditingCategory(null)
+    } catch (error) {
+      Alert({ title: "Erro ao salvar categoria.", variant: "destructive" })
+    }
+  }
+
+  const handleEditCategory = (category: { id: string; name: string }) => {
+    setNewCategoryName(category.name)
+    setEditingCategory(category)
+  }
+
+  const handleDeleteCategory = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+      try {
+        await deleteCategory(id)
+        Alert({ title: "Categoria excluída com sucesso!" })
+      } catch (error) {
+        Alert({ title: "Erro ao excluir categoria.", variant: "destructive" })
+      }
+    }
+  }
+
+
   const filteredReceitas = receitas.filter((receita) => {
     const matchesSearch = receita.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || receita.categoria.toLowerCase() === categoryFilter
+    const matchesCategory = categoryFilter === "all" || receita.categoria.toLowerCase() === categoryFilter.toLowerCase()
     return matchesSearch && matchesCategory
   })
 
@@ -125,7 +178,7 @@ export default function ReceitasPage() {
     doacoes: receitas.filter((r) => r.categoria.toLowerCase() === "doacao").reduce((sum, r) => sum + r.valor, 0),
   }
 
-  if (loading) {
+  if (loading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -140,95 +193,161 @@ export default function ReceitasPage() {
           <h1 className="text-3xl font-bold tracking-tight">Receitas</h1>
           <p className="text-muted-foreground">Gerencie todas as receitas da igreja</p>
         </div>
-        <Dialog
-          open={open}
-          onOpenChange={(isOpen) => {
-            setOpen(isOpen)
-            if (!isOpen) {
-              setFormData({ descricao: "", categoria: "", valor: "", data: "" })
-              setEditingId(null)
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Receita
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Editar Receita" : "Nova Receita"}</DialogTitle>
-              <DialogDescription>
-                {editingId ? "Edite os dados da receita." : "Adicione uma nova receita ao sistema."}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="descricao" className="text-right">
-                    Descrição
-                  </Label>
+        <div className="flex gap-2">
+          {/* Diálogo para Gerenciar Categorias de Receitas */}
+          <Dialog
+            open={categoryDialogOpen}
+            onOpenChange={(isOpen) => {
+              setCategoryDialogOpen(isOpen)
+              if (!isOpen) {
+                setNewCategoryName("")
+                setEditingCategory(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Categorias
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Gerenciar Categorias de Receitas</DialogTitle>
+                <DialogDescription>Adicione, edite ou remova categorias personalizadas para receitas.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddOrUpdateCategory} className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newCategoryName">Nome da Categoria</Label>
                   <Input
-                    id="descricao"
-                    placeholder="Descrição da receita"
-                    className="col-span-3"
-                    value={formData.descricao}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
+                    id="newCategoryName"
+                    placeholder="Ex: Dízimo, Oferta, Doação, etc."
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    required
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="categoria" className="text-right">
-                    Categoria
-                  </Label>
-                  <Select
-                    value={formData.categoria}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria: value }))}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dizimo">Dízimo</SelectItem>
-                      <SelectItem value="oferta">Oferta</SelectItem>
-                      <SelectItem value="doacao">Doação</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="valor" className="text-right">
-                    Valor
-                  </Label>
-                  <Input
-                    id="valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    className="col-span-3"
-                    value={formData.valor}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="data" className="text-right">
-                    Data
-                  </Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    className="col-span-3"
-                    value={formData.data}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
-                  />
-                </div>
+                <Button type="submit">
+                  {editingCategory ? "Atualizar Categoria" : "Adicionar Categoria"}
+                </Button>
+              </form>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Categorias Existentes</h3>
+                {categories.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Nenhuma categoria personalizada adicionada.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {categories.map((cat) => (
+                      <li key={cat.id} className="flex items-center justify-between py-2">
+                        <span>{cat.name}</span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(cat)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <DialogFooter>
-                <Button type="submit">{editingId ? "Atualizar Receita" : "Salvar Receita"}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo para Nova/Editar Receita */}
+          <Dialog
+            open={open}
+            onOpenChange={(isOpen) => {
+              setOpen(isOpen)
+              if (!isOpen) {
+                setFormData({ descricao: "", categoria: "", valor: "", data: "" })
+                setEditingId(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Receita
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Editar Receita" : "Nova Receita"}</DialogTitle>
+                <DialogDescription>
+                  {editingId ? "Edite os dados da receita." : "Adicione uma nova receita ao sistema."}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="descricao" className="text-right">
+                      Descrição
+                    </Label>
+                    <Input
+                      id="descricao"
+                      placeholder="Descrição da receita"
+                      className="col-span-3"
+                      value={formData.descricao}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="categoria" className="text-right">
+                      Categoria
+                    </Label>
+                    <Select
+                      value={formData.categoria}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria: value }))}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allCategories.map((catName) => (
+                          <SelectItem key={catName} value={catName}>
+                            {catName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="valor" className="text-right">
+                      Valor
+                    </Label>
+                    <Input
+                      id="valor"
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="col-span-3"
+                      value={formData.valor}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="data" className="text-right">
+                      Data
+                    </Label>
+                    <Input
+                      id="data"
+                      type="date"
+                      className="col-span-3"
+                      value={formData.data}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingId ? "Atualizar Receita" : "Salvar Receita"}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -306,10 +425,11 @@ export default function ReceitasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="dizimo">Dízimo</SelectItem>
-                <SelectItem value="oferta">Oferta</SelectItem>
-                <SelectItem value="doacao">Doação</SelectItem>
-                <SelectItem value="outros">Outros</SelectItem>
+                {allCategories.map((catName) => (
+                  <SelectItem key={catName} value={catName}>
+                    {catName}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

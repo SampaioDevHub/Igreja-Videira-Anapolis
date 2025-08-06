@@ -132,7 +132,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t p-4">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Versão BETA v2.2.1</span>
+          <span>Versão BETA v2.4.1</span>
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-full bg-green-500" />
             <span>Online</span>
