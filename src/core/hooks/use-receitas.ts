@@ -30,7 +30,6 @@ export function useReceitas() {
         return {
           id: doc.id,
           ...data,
-          // Garantir que campos opcionais existam
           formaPagamento: data.formaPagamento || "pix",
           observacoes: data.observacoes || "",
           membro: data.membro || "",
@@ -41,7 +40,6 @@ export function useReceitas() {
       setReceitas(receitasData)
     } catch (error) {
       console.error("Erro ao buscar receitas:", error)
-      // Se der erro no orderBy, tenta sem ordenação
       try {
         console.log("Retrying without orderBy...")
         const db = getFirestoreInstance()
@@ -52,14 +50,13 @@ export function useReceitas() {
           return {
             id: doc.id,
             ...data,
-            // Garantir que campos opcionais existam
+           
             formaPagamento: data.formaPagamento || "pix",
             observacoes: data.observacoes || "",
             membro: data.membro || "",
           }
         }) as Receita[]
 
-        // Ordenar manualmente por data
         receitasData.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
 
         console.log(`Loaded ${receitasData.length} receitas without orderBy`)
@@ -113,7 +110,6 @@ export function useReceitas() {
         console.warn("Erro ao enviar notificação:", notificationError)
       }
 
-      // Refetch para garantir sincronização
       setTimeout(() => {
         console.log("Refetching after add...")
         fetchReceitas()
@@ -131,7 +127,6 @@ export function useReceitas() {
       const db = getFirestoreInstance()
       const updateData = {
         ...receita,
-        // Garantir valores padrão
         formaPagamento: receita.formaPagamento || "pix",
         observacoes: receita.observacoes || "",
         membro: receita.membro || "",

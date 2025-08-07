@@ -36,10 +36,8 @@ export function useAniversariantes() {
     const hoje = new Date()
     const nascimento = new Date(dataNascimento)
 
-    // Próximo aniversário no ano atual
     const proximoAniversario = new Date(hoje.getFullYear(), nascimento.getMonth(), nascimento.getDate())
 
-    // Se já passou este ano, considerar o próximo ano
     if (proximoAniversario < hoje) {
       proximoAniversario.setFullYear(hoje.getFullYear() + 1)
     }
@@ -97,10 +95,8 @@ export function useAniversariantes() {
         aniversariantes.push(aniversariante)
       }
 
-      // Ordenar por dias restantes
       aniversariantes.sort((a, b) => a.diasRestantes - b.diasRestantes)
 
-      // Filtrar por categorias
       const hoje_lista = aniversariantes.filter((a) => a.diasRestantes === 0)
       const amanha_lista = aniversariantes.filter((a) => a.diasRestantes === 1)
       const proximos = aniversariantes.filter((a) => a.diasRestantes <= 60) // Próximos 60 dias
@@ -114,18 +110,15 @@ export function useAniversariantes() {
       setAniversariantesProximos(proximos)
       setAniversariantesMes(mes_atual)
 
-      // Enviar notificações para aniversários de amanhã
       for (const aniversariante of amanha_lista) {
         if (!aniversariante.parabenizado) {
           await notificationService.sendNotification({
-            title: "Aniversário Amanhã! 🎂",
+            title: "Aniversário Amanhã! ",
             body: `${aniversariante.nome} fará ${aniversariante.idade + 1} anos amanhã`,
             tag: `aniversario-${aniversariante.id}`,
           })
         }
       }
-
-      // Enviar notificações para aniversários de hoje
       for (const aniversariante of hoje_lista) {
         if (!aniversariante.parabenizado) {
           await notificationService.sendNotification({
@@ -150,10 +143,8 @@ export function useAniversariantes() {
       const membro = membros.find((m) => m.id === membroId)
       if (!membro) return
 
-      // Aqui você pode integrar com serviços de email, WhatsApp, etc.
       console.log(`Enviando parabéns para ${membro.nome}`)
 
-      // Simular envio de mensagem
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       await notificationService.sendNotification({
@@ -182,7 +173,6 @@ export function useAniversariantes() {
         timestamp: new Date(),
       })
 
-      // Atualizar estado local
       setAniversariantesHoje((prev) => prev.map((a) => (a.id === membroId ? { ...a, parabenizado: true } : a)))
       setAniversariantesProximos((prev) => prev.map((a) => (a.id === membroId ? { ...a, parabenizado: true } : a)))
     } catch (error) {
@@ -191,32 +181,29 @@ export function useAniversariantes() {
     }
   }
 
-  // Verificar aniversários diariamente
   useEffect(() => {
     if (!loadingMembros) {
       processarAniversariantes()
     }
   }, [membros, loadingMembros])
 
-  // Configurar verificação diária
   useEffect(() => {
     const agora = new Date()
     const proximaVerificacao = new Date()
     proximaVerificacao.setDate(agora.getDate() + 1)
-    proximaVerificacao.setHours(9, 0, 0, 0) // 9h da manhã
+    proximaVerificacao.setHours(9, 0, 0, 0) 
 
     const tempoAteProximaVerificacao = proximaVerificacao.getTime() - agora.getTime()
 
     const timeout = setTimeout(() => {
       processarAniversariantes()
 
-      // Configurar verificação diária
       const interval = setInterval(
         () => {
           processarAniversariantes()
         },
         24 * 60 * 60 * 1000,
-      ) // 24 horas
+      )
 
       return () => clearInterval(interval)
     }, tempoAteProximaVerificacao)

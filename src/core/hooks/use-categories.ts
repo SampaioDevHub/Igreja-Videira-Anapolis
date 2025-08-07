@@ -4,13 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore"
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { getFirestoreInstance } from "@/src/services/firebase/config/firebase"
-
-export interface CustomCategory {
-  id: string
-  name: string
-  userId: string
-  createdAt: Date
-}
+import { CustomCategory } from "../@types/CustomCategory"
 
 export function useCategories(collectionName: string) {
   const [categories, setCategories] = useState<CustomCategory[]>([])

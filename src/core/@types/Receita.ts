@@ -1,4 +1,5 @@
 export interface Receita {
+  tipo: string
   id: string
   descricao: string
   categoria: string

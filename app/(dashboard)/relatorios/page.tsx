@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, Download, TrendingUp, TrendingDown, LucidePieChart, BarChart3 } from "lucide-react"
+import { FileText, Download, TrendingUp, TrendingDown, LucidePieChart, BarChart3 } from 'lucide-react'
 
 import {
   BarChart,
@@ -43,45 +43,70 @@ export default function RelatoriosPage() {
 
 
   const dadosRelatorio = useMemo(() => {
-    let receitasFiltradas = receitas
-    let despesasFiltradas = despesas
+    let tempReceitas = [...receitas];
+    let tempDespesas = [...despesas];
 
-    // Aplicar filtros de data
+    // 1. Aplicar filtro de Período
     if (periodo !== "todos") {
-      const hoje = new Date()
-      let dataLimite: Date
+      if (periodo === "personalizado") {
+        if (dataInicio && dataFim) {
+          tempReceitas = tempReceitas.filter((r) => r.data >= dataInicio && r.data <= dataFim);
+          tempDespesas = tempDespesas.filter((d) => d.data >= dataInicio && d.data <= dataFim);
+        }
+      } else {
+        const hoje = new Date();
+        let dataLimite: Date;
 
-      switch (periodo) {
-        case "mes-atual":
-          dataLimite = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-          break
-        case "trimestre":
-          dataLimite = new Date(hoje.getFullYear(), hoje.getMonth() - 3, 1)
-          break
-        case "semestre":
-          dataLimite = new Date(hoje.getFullYear(), hoje.getMonth() - 6, 1)
-          break
-        case "ano-atual":
-          dataLimite = new Date(hoje.getFullYear(), 0, 1)
-          break
-        case "personalizado":
-          if (dataInicio && dataFim) {
-            receitasFiltradas = receitas.filter((r) => r.data >= dataInicio && r.data <= dataFim)
-            despesasFiltradas = despesas.filter((d) => d.data >= dataInicio && d.data <= dataFim)
-          }
-          return { receitasFiltradas, despesasFiltradas }
-        default:
-          dataLimite = new Date(0)
-      }
-
-      if (periodo !== "personalizado") {
-        receitasFiltradas = receitas.filter((r) => new Date(r.data) >= dataLimite)
-        despesasFiltradas = despesas.filter((d) => new Date(d.data) >= dataLimite)
+        switch (periodo) {
+          case "mes-atual":
+            dataLimite = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            break;
+          case "trimestre":
+            dataLimite = new Date(hoje.getFullYear(), hoje.getMonth() - 3, 1);
+            break;
+          case "semestre":
+            dataLimite = new Date(hoje.getFullYear(), hoje.getMonth() - 6, 1);
+            break;
+          case "ano-atual":
+            dataLimite = new Date(hoje.getFullYear(), 0, 1);
+            break;
+          default:
+            dataLimite = new Date(0); // Fallback, should not be reached with current options
+        }
+        tempReceitas = tempReceitas.filter((r) => new Date(r.data) >= dataLimite);
+        tempDespesas = tempDespesas.filter((d) => new Date(d.data) >= dataLimite);
       }
     }
 
-    return { receitasFiltradas, despesasFiltradas }
-  }, [receitas, despesas, periodo, dataInicio, dataFim])
+    // 2. Aplicar filtro de Tipo de Relatório
+    let receitasFiltradas = tempReceitas;
+    let despesasFiltradas = tempDespesas;
+
+    switch (tipoRelatorio) {
+      case "receitas":
+        despesasFiltradas = []; // Mostrar apenas receitas
+        break;
+      case "despesas":
+        receitasFiltradas = []; // Mostrar apenas despesas
+        break;
+      case "dizimos":
+        // Assumindo que o objeto de receita tem uma propriedade 'tipo' (ex: r.tipo === 'dizimo')
+        receitasFiltradas = receitasFiltradas.filter((r) => r.tipo === "dizimo");
+        despesasFiltradas = [];
+        break;
+      case "ofertas":
+        // Assumindo que o objeto de receita tem uma propriedade 'tipo' (ex: r.tipo === 'oferta')
+        receitasFiltradas = receitasFiltradas.filter((r) => r.tipo === "oferta");
+        despesasFiltradas = [];
+        break;
+      case "geral":
+      default:
+        // Nenhum filtro adicional necessário, usar tempReceitas e tempDespesas
+        break;
+    }
+
+    return { receitasFiltradas, despesasFiltradas };
+  }, [receitas, despesas, periodo, dataInicio, dataFim, tipoRelatorio]);
 
   const estatisticas = useMemo(() => {
     const { receitasFiltradas, despesasFiltradas } = dadosRelatorio
@@ -168,12 +193,18 @@ export default function RelatoriosPage() {
       const periodText =
         periodo === "personalizado" ? `${dataInicio} a ${dataFim}` : periodo.replace("-", " ").toUpperCase()
 
-      pdfGenerator.generateFinancialReport(receitasFiltradas, despesasFiltradas, {
-        title: "RELATÓRIO FINANCEIRO COMPLETO",
-        subtitle: "Igreja Videira - Sistema de Gestão Financeira",
-        period: periodText,
-        includeCharts: true,
-      })
+      pdfGenerator.generateFinancialReport(
+        receitas, // allReceitas
+        despesas, // allDespesas
+        receitasFiltradas, // filteredReceitas
+        despesasFiltradas, // filteredDespesas
+        {
+          title: "RELATÓRIO FINANCEIRO COMPLETO",
+          subtitle: "Igreja Videira - Sistema de Gestão Financeira",
+          period: periodText,
+          includeCharts: true,
+        }
+      )
 
       pdfGenerator.save(`relatorio-financeiro-${new Date().toISOString().split("T")[0]}.pdf`)
 

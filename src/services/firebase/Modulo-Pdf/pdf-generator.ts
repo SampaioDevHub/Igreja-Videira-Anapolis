@@ -56,33 +56,69 @@ export class PDFGenerator {
     }
   }
 
-  generateFinancialReport(receitas: Receita[], despesas: Despesa[], options: PDFOptions): void {
+  generateFinancialReport(
+    allReceitas: Receita[],
+    allDespesas: Despesa[],
+    filteredReceitas: Receita[],
+    filteredDespesas: Despesa[],
+    options: PDFOptions,
+  ): void {
     let yPosition = this.addHeader(options.title, options.subtitle, options.period)
 
-    // Resumo financeiro
-    const totalReceitas = receitas.reduce((sum, r) => sum + r.valor, 0)
-    const totalDespesas = despesas.reduce((sum, d) => sum + d.valor, 0)
-    const saldoLiquido = totalReceitas - totalDespesas
+    // --- RESUMO FINANCEIRO GERAL (sem filtros) ---
+    const totalReceitasGeral = allReceitas.reduce((sum, r) => sum + r.valor, 0)
+    const totalDespesasGeral = allDespesas.reduce((sum, d) => sum + d.valor, 0)
+    const saldoLiquidoGeral = totalReceitasGeral - totalDespesasGeral
 
     yPosition += 10
     this.doc.setFontSize(14)
     this.doc.setFont("helvetica", "bold")
-    this.doc.text("RESUMO FINANCEIRO", 20, yPosition)
+    this.doc.text("RESUMO FINANCEIRO GERAL", 20, yPosition)
 
     yPosition += 15
     this.doc.setFontSize(12)
     this.doc.setFont("helvetica", "normal")
 
-    const resumoData = [
-      ["Total de Receitas", `R$ ${totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
-      ["Total de Despesas", `R$ ${totalDespesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
-      ["Saldo Líquido", `R$ ${saldoLiquido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+    const resumoGeralData = [
+      ["Total de Receitas (Geral)", `R$ ${totalReceitasGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+      ["Total de Despesas (Geral)", `R$ ${totalDespesasGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+      ["Saldo Líquido (Geral)", `R$ ${saldoLiquidoGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
     ]
 
     autoTable(this.doc, {
       startY: yPosition,
       head: [["Descrição", "Valor"]],
-      body: resumoData,
+      body: resumoGeralData,
+      theme: "grid",
+      headStyles: { fillColor: [60, 179, 113] }, // Cor verde para o resumo geral
+      styles: { fontSize: 10 },
+    })
+
+    yPosition = (this.doc as any).lastAutoTable.finalY + 20
+
+    // --- RESUMO FINANCEIRO DO PERÍODO/TIPO (com filtros) ---
+    const totalReceitasFiltradas = filteredReceitas.reduce((sum, r) => sum + r.valor, 0)
+    const totalDespesasFiltradas = filteredDespesas.reduce((sum, d) => sum + d.valor, 0)
+    const saldoLiquidoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas
+
+    this.doc.setFontSize(14)
+    this.doc.setFont("helvetica", "bold")
+    this.doc.text("RESUMO FINANCEIRO DO PERÍODO/TIPO", 20, yPosition)
+
+    yPosition += 15
+    this.doc.setFontSize(12)
+    this.doc.setFont("helvetica", "normal")
+
+    const resumoFiltradoData = [
+      ["Total de Receitas", `R$ ${totalReceitasFiltradas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+      ["Total de Despesas", `R$ ${totalDespesasFiltradas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+      ["Saldo Líquido", `R$ ${saldoLiquidoFiltrado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+    ]
+
+    autoTable(this.doc, {
+      startY: yPosition,
+      head: [["Descrição", "Valor"]],
+      body: resumoFiltradoData,
       theme: "grid",
       headStyles: { fillColor: [41, 128, 185] },
       styles: { fontSize: 10 },
@@ -90,13 +126,13 @@ export class PDFGenerator {
 
     yPosition = (this.doc as any).lastAutoTable.finalY + 20
 
-    // Receitas por categoria
-    if (receitas.length > 0) {
+    // Receitas por categoria (usando dados filtrados)
+    if (filteredReceitas.length > 0) {
       this.doc.setFontSize(14)
       this.doc.setFont("helvetica", "bold")
       this.doc.text("RECEITAS POR CATEGORIA", 20, yPosition)
 
-      const receitasPorCategoria = receitas.reduce(
+      const receitasPorCategoria = filteredReceitas.reduce(
         (acc, r) => {
           acc[r.categoria] = (acc[r.categoria] || 0) + r.valor
           return acc
@@ -122,13 +158,13 @@ export class PDFGenerator {
       yPosition = (this.doc as any).lastAutoTable.finalY + 20
     }
 
-    // Despesas por categoria
-    if (despesas.length > 0) {
+    // Despesas por categoria (usando dados filtrados)
+    if (filteredDespesas.length > 0) {
       this.doc.setFontSize(14)
       this.doc.setFont("helvetica", "bold")
       this.doc.text("DESPESAS POR CATEGORIA", 20, yPosition)
 
-      const despesasPorCategoria = despesas.reduce(
+      const despesasPorCategoria = filteredDespesas.reduce(
         (acc, d) => {
           acc[d.categoria] = (acc[d.categoria] || 0) + d.valor
           return acc
@@ -150,6 +186,44 @@ export class PDFGenerator {
         headStyles: { fillColor: [231, 76, 60] },
         styles: { fontSize: 10 },
       })
+      yPosition = (this.doc as any).lastAutoTable.finalY + 20 // Atualiza yPosition após a tabela
+    }
+
+    // Adicionar gráficos se includeCharts for true e houver imagens
+    if (options.includeCharts && options.chartImages) {
+      this.doc.addPage(); // Inicia gráficos em uma nova página
+      yPosition = 20; // Reinicia a posição Y para a nova página
+
+      this.doc.setFontSize(16);
+      this.doc.setFont("helvetica", "bold");
+      this.doc.text("GRÁFICOS DE ANÁLISE FINANCEIRA", 20, yPosition);
+      yPosition += 15;
+
+      const chartWidth = 170; // Largura do gráfico em mm (para A4 com margens de 20mm)
+      const chartHeight = 90; // Altura do gráfico em mm
+
+      // Função auxiliar para adicionar gráfico
+      const addChart = (title: string, imageData?: string) => {
+        if (imageData) {
+          if (yPosition + chartHeight + 20 > this.doc.internal.pageSize.height) {
+            this.doc.addPage();
+            yPosition = 20;
+          }
+          this.doc.setFontSize(12);
+          this.doc.setFont("helvetica", "bold");
+          this.doc.text(title, 20, yPosition);
+          yPosition += 5; // Espaço para o título
+          this.doc.addImage(imageData, 'PNG', 20, yPosition, chartWidth, chartHeight);
+          yPosition += chartHeight + 15; // Espaço após o gráfico
+        }
+      };
+
+      addChart("Comparativo Geral", options.chartImages.barChartComparison);
+      addChart("Receitas por Categoria", options.chartImages.pieReceitasChart);
+      addChart("Despesas por Categoria", options.chartImages.pieDespesasChart);
+      addChart("Status das Despesas", options.chartImages.pieDespesasStatusChart);
+      addChart("Evolução Financeira (Receitas, Despesas, Saldo)", options.chartImages.evolutionLineChart);
+      addChart("Área de Saldo Líquido Mensal", options.chartImages.areaSaldoChart);
     }
 
     this.addFooter()

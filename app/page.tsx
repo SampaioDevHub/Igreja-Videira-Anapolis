@@ -33,7 +33,7 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold">Sistema Financeiro</h1>
         </div>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p className="mt-4 text-muted-foreground">Carregando...</p>
+        <p className="mt-4 text-muted-foreground">Carregando..</p>
       </div>
     )
   }
