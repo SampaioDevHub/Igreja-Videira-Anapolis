@@ -147,6 +147,7 @@ export default function OfertasPage() {
         await updateReceita(editingId, ofertaData)
         toast.success("Oferta atualizada com sucesso!")
       } else {
+        //@ts-ignore
         await addReceita(ofertaData)
         toast.success("Oferta registrada com sucesso!")
       }

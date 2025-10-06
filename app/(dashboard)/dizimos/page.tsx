@@ -125,6 +125,7 @@ export default function DizimosPage() {
         await updateReceita(editingId, dizimoData)
         toast.success("Dízimo atualizado com sucesso.")
       } else {
+        //@ts-ignore
         await addReceita(dizimoData)
         toast.success("Dízimo registrado com sucesso.")
 

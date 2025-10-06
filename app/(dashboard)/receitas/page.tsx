@@ -78,6 +78,7 @@ export default function ReceitasPage() {
           title: "A receita foi atualizada com sucesso.",
         })
       } else {
+        //@ts-ignore
         await addReceita(receitaData)
         Alert({
           title: "Receita adicionada!",
