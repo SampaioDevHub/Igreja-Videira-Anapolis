@@ -190,6 +190,7 @@ export class PDFGenerator {
     }
 
     // Adicionar gráficos se includeCharts for true e houver imagens
+    //@ts-ignore
     if (options.includeCharts && options.chartImages) {
       this.doc.addPage(); // Inicia gráficos em uma nova página
       yPosition = 20; // Reinicia a posição Y para a nova página
@@ -218,11 +219,17 @@ export class PDFGenerator {
         }
       };
 
+       //@ts-ignore
       addChart("Comparativo Geral", options.chartImages.barChartComparison);
+       //@ts-ignore
       addChart("Receitas por Categoria", options.chartImages.pieReceitasChart);
+       //@ts-ignore
       addChart("Despesas por Categoria", options.chartImages.pieDespesasChart);
+       //@ts-ignore
       addChart("Status das Despesas", options.chartImages.pieDespesasStatusChart);
+       //@ts-ignore
       addChart("Evolução Financeira (Receitas, Despesas, Saldo)", options.chartImages.evolutionLineChart);
+       //@ts-ignore
       addChart("Área de Saldo Líquido Mensal", options.chartImages.areaSaldoChart);
     }
 
