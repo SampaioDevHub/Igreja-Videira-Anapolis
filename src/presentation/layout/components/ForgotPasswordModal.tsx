@@ -22,7 +22,6 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
 
   const emailInputRef = useRef<HTMLInputElement>(null)
-
  
   useEffect(() => {
     if (open) {
