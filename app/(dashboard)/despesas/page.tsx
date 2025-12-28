@@ -27,6 +27,14 @@ import {
   AlertDescription
 } from "@/components/ui/alert"
 
+const getTodayDateString = () => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, "0")
+  const day = String(today.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 export default function DespesasPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -34,7 +42,7 @@ export default function DespesasPage() {
     descricao: "",
     categoria: "",
     valor: "",
-    data: "",
+    data: getTodayDateString(),
     status: "Pendente" as "Pago" | "Pendente" | "Vencido",
   })
   const [searchTerm, setSearchTerm] = useState("")
@@ -85,7 +93,7 @@ export default function DespesasPage() {
         })
       }
 
-      setFormData({ descricao: "", categoria: "", valor: "", data: "", status: "Pendente" })
+      setFormData({ descricao: "", categoria: "", valor: "", data: getTodayDateString(), status: "Pendente" })
       setEditingId(null)
       setOpen(false)
     } catch (error) {
@@ -264,8 +272,11 @@ export default function DespesasPage() {
             open={open}
             onOpenChange={(isOpen) => {
               setOpen(isOpen)
+              if (isOpen && !editingId) {
+                setFormData((prev) => ({ ...prev, data: getTodayDateString() }))
+              }
               if (!isOpen) {
-                setFormData({ descricao: "", categoria: "", valor: "", data: "", status: "Pendente" })
+                setFormData({ descricao: "", categoria: "", valor: "", data: getTodayDateString(), status: "Pendente" })
                 setEditingId(null)
               }
             }}
