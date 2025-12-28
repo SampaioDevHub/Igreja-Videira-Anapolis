@@ -32,6 +32,9 @@ import { PDFGenerator } from "@/src/services/firebase/Modulo-Pdf/pdf-generator"
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"]
 
+const parseLocalDateString = (value: string) =>
+  new Date(value.includes("T") ? value : `${value}T00:00:00`)
+
 export default function RelatoriosPage() {
   const [tipoRelatorio, setTipoRelatorio] = useState("geral")
   const [dataInicio, setDataInicio] = useState("")
@@ -46,10 +49,8 @@ export default function RelatoriosPage() {
     let tempReceitas = [...receitas];
     let tempDespesas = [...despesas];
 
-    const parseDate = (value: string) =>
-      new Date(value.includes("T") ? value : `${value}T00:00:00`);
     const isWeekend = (value: string) => {
-      const day = parseDate(value).getDay();
+      const day = parseLocalDateString(value).getDay();
       return day === 0 || day === 6;
     };
 
@@ -80,8 +81,8 @@ export default function RelatoriosPage() {
           default:
             dataLimite = new Date(0); // Fallback, should not be reached with current options
         }
-        tempReceitas = tempReceitas.filter((r) => parseDate(r.data) >= dataLimite);
-        tempDespesas = tempDespesas.filter((d) => parseDate(d.data) >= dataLimite);
+        tempReceitas = tempReceitas.filter((r) => parseLocalDateString(r.data) >= dataLimite);
+        tempDespesas = tempDespesas.filter((d) => parseLocalDateString(d.data) >= dataLimite);
       }
     }
 
@@ -157,7 +158,7 @@ export default function RelatoriosPage() {
     const dadosMensais: { [key: string]: { receitas: number; despesas: number } } = {}
 
     receitasFiltradas.forEach((receita) => {
-      const date = parseDate(receita.data)
+      const date = parseLocalDateString(receita.data)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       if (!dadosMensais[monthKey]) {
         dadosMensais[monthKey] = { receitas: 0, despesas: 0 }
@@ -166,7 +167,7 @@ export default function RelatoriosPage() {
     })
 
     despesasFiltradas.forEach((despesa) => {
-      const date = parseDate(despesa.data)
+      const date = parseLocalDateString(despesa.data)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       if (!dadosMensais[monthKey]) {
         dadosMensais[monthKey] = { receitas: 0, despesas: 0 }
