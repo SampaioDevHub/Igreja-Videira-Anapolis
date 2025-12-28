@@ -28,6 +28,14 @@ import {
 } from "@/components/ui/alert"
 
 
+const getTodayDateString = () => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, "0")
+  const day = String(today.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 export default function ReceitasPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -35,7 +43,7 @@ export default function ReceitasPage() {
     descricao: "",
     categoria: "",
     valor: "",
-    data: "",
+    data: getTodayDateString(),
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
@@ -86,7 +94,7 @@ export default function ReceitasPage() {
         })
       }
 
-      setFormData({ descricao: "", categoria: "", valor: "", data: "" })
+      setFormData({ descricao: "", categoria: "", valor: "", data: getTodayDateString() })
       setEditingId(null)
       setOpen(false)
     } catch (error) {
@@ -262,8 +270,11 @@ export default function ReceitasPage() {
             open={open}
             onOpenChange={(isOpen) => {
               setOpen(isOpen)
+              if (isOpen && !editingId) {
+                setFormData((prev) => ({ ...prev, data: getTodayDateString() }))
+              }
               if (!isOpen) {
-                setFormData({ descricao: "", categoria: "", valor: "", data: "" })
+                setFormData({ descricao: "", categoria: "", valor: "", data: getTodayDateString() })
                 setEditingId(null)
               }
             }}

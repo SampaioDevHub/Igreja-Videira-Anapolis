@@ -23,6 +23,14 @@ import { useReceitas } from "@/src/core/hooks/use-receitas"
 import { useCategories } from "@/src/core/hooks/use-categories"
 import { toast } from 'react-toastify'
 
+const getTodayDateString = () => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, "0")
+  const day = String(today.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 
 export default function DizimosPage() {
   const [open, setOpen] = useState(false)
@@ -30,7 +38,7 @@ export default function DizimosPage() {
   const [formData, setFormData] = useState({
     descricao: "",
     valor: "",
-    data: "",
+    data: getTodayDateString(),
     membro: "",
     formaPagamento: "",
     observacoes: "",
@@ -134,7 +142,7 @@ export default function DizimosPage() {
       setFormData({
         descricao: "",
         valor: "",
-        data: "",
+        data: getTodayDateString(),
         membro: "",
         formaPagamento: "",
         observacoes: "",
@@ -367,11 +375,14 @@ export default function DizimosPage() {
             open={open}
             onOpenChange={(isOpen) => {
               setOpen(isOpen)
+              if (isOpen && !editingId) {
+                setFormData((prev) => ({ ...prev, data: getTodayDateString() }))
+              }
               if (!isOpen) {
                 setFormData({
                   descricao: "",
                   valor: "",
-                  data: "",
+                  data: getTodayDateString(),
                   membro: "",
                   formaPagamento: "",
                   observacoes: "",
