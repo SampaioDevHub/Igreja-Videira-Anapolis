@@ -46,6 +46,13 @@ export default function RelatoriosPage() {
     let tempReceitas = [...receitas];
     let tempDespesas = [...despesas];
 
+    const parseDate = (value: string) =>
+      new Date(value.includes("T") ? value : `${value}T00:00:00`);
+    const isWeekend = (value: string) => {
+      const day = parseDate(value).getDay();
+      return day === 0 || day === 6;
+    };
+
     // 1. Aplicar filtro de Período
     if (periodo !== "todos") {
       if (periodo === "personalizado") {
@@ -78,7 +85,11 @@ export default function RelatoriosPage() {
       }
     }
 
-    // 2. Aplicar filtro de Tipo de Relatório
+    // 2. Remover finais de semana (sabado/domingo)
+    tempReceitas = tempReceitas.filter((r) => !isWeekend(r.data));
+    tempDespesas = tempDespesas.filter((d) => !isWeekend(d.data));
+
+    // 3. Aplicar filtro de Tipo de Relatório
     let receitasFiltradas = tempReceitas;
     let despesasFiltradas = tempDespesas;
 
