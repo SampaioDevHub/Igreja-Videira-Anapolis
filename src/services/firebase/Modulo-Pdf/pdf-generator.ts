@@ -250,22 +250,24 @@ export class PDFGenerator {
       membro.email || "N/A",
       membro.telefone || "N/A",
       membro.status,
+      membro.categoria || "N/A",
       this.parseLocalDateString(membro.dataCadastro).toLocaleDateString("pt-BR"),
     ])
 
     autoTable(this.doc, {
       startY: yPosition,
-      head: [["Nome", "Email", "Telefone", "Status", "Data Cadastro"]],
+      head: [["Nome", "Email", "Telefone", "Status", "Categoria", "Data Cadastro"]],
       body: membrosData,
       theme: "grid",
       headStyles: { fillColor: [155, 89, 182] },
       styles: { fontSize: 9 },
       columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 25 },
+        0: { cellWidth: 35 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 20 },
         4: { cellWidth: 30 },
+        5: { cellWidth: 30 },
       },
     })
 

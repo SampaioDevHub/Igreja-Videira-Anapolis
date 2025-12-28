@@ -17,6 +17,11 @@ import { DollarSign, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export default function DashboardPage() {
+  const normalizeText = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
   const { receitas, loading: loadingReceitas } = useReceitas();
   const { despesas, loading: loadingDespesas } = useDespesas();
   const { hidden, setHidden } = useHideValues();
@@ -31,7 +36,7 @@ export default function DashboardPage() {
       0
     );
     const totalDizimos = receitas
-      .filter((receita) => receita.categoria.toLowerCase() === "dizimo")
+      .filter((receita) => normalizeText(receita.categoria) === "dizimo")
       .reduce((sum, receita) => sum + receita.valor, 0);
 
     return {
@@ -169,10 +174,7 @@ export default function DashboardPage() {
                   })}`}
             </div>
             <p className="text-xs text-muted-foreground">
-              {
-                receitas.filter((r) => r.categoria.toLowerCase() === "dizimo")
-                  .length
-              }{" "}
+              {receitas.filter((r) => normalizeText(r.categoria) === "dizimo").length}{" "}
               dízimos registrados
             </p>
           </CardContent>

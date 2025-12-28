@@ -35,11 +35,17 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"
 const parseLocalDateString = (value: string) =>
   new Date(value.includes("T") ? value : `${value}T00:00:00`)
 
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
 export default function RelatoriosPage() {
   const [tipoRelatorio, setTipoRelatorio] = useState("geral")
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
-  const [periodo, setPeriodo] = useState("mes-atual")
+  const [periodo, setPeriodo] = useState("todos")
 
   const { receitas, loading: loadingReceitas } = useReceitas()
   const { despesas, loading: loadingDespesas } = useDespesas()
@@ -102,13 +108,15 @@ export default function RelatoriosPage() {
         receitasFiltradas = []; // Mostrar apenas despesas
         break;
       case "dizimos":
-        // Assumindo que o objeto de receita tem uma propriedade 'tipo' (ex: r.tipo === 'dizimo')
-        receitasFiltradas = receitasFiltradas.filter((r) => r.tipo === "dizimo");
+        receitasFiltradas = receitasFiltradas.filter(
+          (r) => normalizeText(r.categoria || "") === "dizimo"
+        );
         despesasFiltradas = [];
         break;
       case "ofertas":
-        // Assumindo que o objeto de receita tem uma propriedade 'tipo' (ex: r.tipo === 'oferta')
-        receitasFiltradas = receitasFiltradas.filter((r) => r.tipo === "oferta");
+        receitasFiltradas = receitasFiltradas.filter(
+          (r) => normalizeText(r.categoria || "") === "oferta"
+        );
         despesasFiltradas = [];
         break;
       case "geral":

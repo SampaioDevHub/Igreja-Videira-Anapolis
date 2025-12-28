@@ -39,6 +39,12 @@ const getTodayDateString = () => {
 const parseLocalDateString = (value: string) =>
   new Date(value.includes("T") ? value : `${value}T00:00:00`)
 
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
 export default function ReceitasPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -179,15 +185,16 @@ export default function ReceitasPage() {
 
   const filteredReceitas = receitas.filter((receita) => {
     const matchesSearch = receita.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || receita.categoria.toLowerCase() === categoryFilter.toLowerCase()
+    const matchesCategory =
+      categoryFilter === "all" || normalizeText(receita.categoria) === normalizeText(categoryFilter)
     return matchesSearch && matchesCategory
   })
 
   const stats = {
     total: receitas.reduce((sum, receita) => sum + receita.valor, 0),
-    dizimos: receitas.filter((r) => r.categoria.toLowerCase() === "dizimo").reduce((sum, r) => sum + r.valor, 0),
-    ofertas: receitas.filter((r) => r.categoria.toLowerCase() === "oferta").reduce((sum, r) => sum + r.valor, 0),
-    doacoes: receitas.filter((r) => r.categoria.toLowerCase() === "doacao").reduce((sum, r) => sum + r.valor, 0),
+    dizimos: receitas.filter((r) => normalizeText(r.categoria) === "dizimo").reduce((sum, r) => sum + r.valor, 0),
+    ofertas: receitas.filter((r) => normalizeText(r.categoria) === "oferta").reduce((sum, r) => sum + r.valor, 0),
+    doacoes: receitas.filter((r) => normalizeText(r.categoria) === "doacao").reduce((sum, r) => sum + r.valor, 0),
   }
 
   if (loading || categoriesLoading) {
