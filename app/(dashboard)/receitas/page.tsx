@@ -36,6 +36,9 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`
 }
 
+const parseLocalDateString = (value: string) =>
+  new Date(value.includes("T") ? value : `${value}T00:00:00`)
+
 export default function ReceitasPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -466,7 +469,7 @@ export default function ReceitasPage() {
                   <TableRow key={receita.id}>
                     <TableCell className="font-medium">{receita.descricao}</TableCell>
                     <TableCell className="capitalize">{receita.categoria}</TableCell>
-                    <TableCell>{new Date(receita.data).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>{parseLocalDateString(receita.data).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-right">
                       R$ {receita.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </TableCell>

@@ -12,6 +12,10 @@ export class PDFGenerator {
     this.doc = new jsPDF()
   }
 
+  private parseLocalDateString(value: string) {
+    return new Date(value.includes("T") ? value : `${value}T00:00:00`)
+  }
+
   private addHeader(title: string, subtitle?: string, period?: string) {
     // Logo/Título da Igreja
     this.doc.setFontSize(20)
@@ -246,7 +250,7 @@ export class PDFGenerator {
       membro.email || "N/A",
       membro.telefone || "N/A",
       membro.status,
-      new Date(membro.dataCadastro).toLocaleDateString("pt-BR"),
+      this.parseLocalDateString(membro.dataCadastro).toLocaleDateString("pt-BR"),
     ])
 
     autoTable(this.doc, {
@@ -277,7 +281,7 @@ export class PDFGenerator {
 
     const dizimosData = dizimos.map((dizimo) => [
       dizimo.descricao,
-      new Date(dizimo.data).toLocaleDateString("pt-BR"),
+      this.parseLocalDateString(dizimo.data).toLocaleDateString("pt-BR"),
       `R$ ${dizimo.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
     ])
 

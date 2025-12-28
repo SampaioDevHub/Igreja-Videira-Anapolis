@@ -19,6 +19,8 @@ type PeriodType = typeof PERIODS[number]
 
 export function Overview({ receitas, despesas }: OverviewProps) {
   const [periodo, setPeriodo] = useState<PeriodType>("mensal")
+  const parseLocalDateString = (value: string) =>
+    new Date(value.includes("T") ? value : `${value}T00:00:00`)
 
   const data = useMemo(() => {
     const groupedData: { [key: string]: { receitas: number; despesas: number } } = {}
@@ -46,7 +48,7 @@ export function Overview({ receitas, despesas }: OverviewProps) {
     }
 
     const processItem = (item: any, type: "receitas" | "despesas") => {
-      const date = new Date(item.data)
+      const date = parseLocalDateString(item.data)
       const key = getKey(date)
 
       if (!groupedData[key]) groupedData[key] = { receitas: 0, despesas: 0 }
@@ -62,14 +64,14 @@ export function Overview({ receitas, despesas }: OverviewProps) {
         if (periodo === "anual") {
           label = key
         } else if (periodo === "mensal") {
-          label = new Date(key + "-01").toLocaleDateString("pt-BR", {
+          label = parseLocalDateString(key + "-01").toLocaleDateString("pt-BR", {
             month: "short",
             year: "2-digit",
           })
         } else if (periodo === "semanal") {
           label = `Sem ${key.split("-W")[1]}/${key.split("-W")[0]}`
         } else {
-          label = new Date(key).toLocaleDateString("pt-BR")
+          label = parseLocalDateString(key).toLocaleDateString("pt-BR")
         }
 
         return {

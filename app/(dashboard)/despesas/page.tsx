@@ -35,6 +35,9 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`
 }
 
+const parseLocalDateString = (value: string) =>
+  new Date(value.includes("T") ? value : `${value}T00:00:00`)
+
 export default function DespesasPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -500,7 +503,7 @@ export default function DespesasPage() {
                   <TableRow key={despesa.id}>
                     <TableCell className="font-medium">{despesa.descricao}</TableCell>
                     <TableCell className="capitalize">{despesa.categoria}</TableCell>
-                    <TableCell>{new Date(despesa.data).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>{parseLocalDateString(despesa.data).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${despesa.status === "Pago"

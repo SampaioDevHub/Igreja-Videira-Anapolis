@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
 export function RecentTransactions({ receitas, despesas }: RecentTransactionsProps) {
+  const parseLocalDateString = (value: string) =>
+    new Date(value.includes("T") ? value : `${value}T00:00:00`)
   const recentTransactions = useMemo(() => {
     const allTransactions = [
       ...receitas.map((r) => ({ ...r, type: "receita" as const })),
@@ -16,7 +18,7 @@ export function RecentTransactions({ receitas, despesas }: RecentTransactionsPro
     ]
 
     return allTransactions
-      .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+      .sort((a, b) => parseLocalDateString(b.data).getTime() - parseLocalDateString(a.data).getTime())
       .slice(0, 5)
   }, [receitas, despesas])
 
@@ -51,7 +53,7 @@ export function RecentTransactions({ receitas, despesas }: RecentTransactionsPro
               </p>
               <p className="text-sm text-muted-foreground">
                 {isReceita ? "Recebido de" : "Pago para"} {transaction.categoria} •{" "}
-                {new Date(transaction.data).toLocaleDateString("pt-BR")}
+                {parseLocalDateString(transaction.data).toLocaleDateString("pt-BR")}
               </p>
             </div>
             <div

@@ -80,8 +80,8 @@ export default function RelatoriosPage() {
           default:
             dataLimite = new Date(0); // Fallback, should not be reached with current options
         }
-        tempReceitas = tempReceitas.filter((r) => new Date(r.data) >= dataLimite);
-        tempDespesas = tempDespesas.filter((d) => new Date(d.data) >= dataLimite);
+        tempReceitas = tempReceitas.filter((r) => parseDate(r.data) >= dataLimite);
+        tempDespesas = tempDespesas.filter((d) => parseDate(d.data) >= dataLimite);
       }
     }
 
@@ -157,7 +157,7 @@ export default function RelatoriosPage() {
     const dadosMensais: { [key: string]: { receitas: number; despesas: number } } = {}
 
     receitasFiltradas.forEach((receita) => {
-      const date = new Date(receita.data)
+      const date = parseDate(receita.data)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       if (!dadosMensais[monthKey]) {
         dadosMensais[monthKey] = { receitas: 0, despesas: 0 }
@@ -166,7 +166,7 @@ export default function RelatoriosPage() {
     })
 
     despesasFiltradas.forEach((despesa) => {
-      const date = new Date(despesa.data)
+      const date = parseDate(despesa.data)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       if (!dadosMensais[monthKey]) {
         dadosMensais[monthKey] = { receitas: 0, despesas: 0 }

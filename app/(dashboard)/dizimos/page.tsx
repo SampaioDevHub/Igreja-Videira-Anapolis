@@ -31,6 +31,9 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`
 }
 
+const parseLocalDateString = (value: string) =>
+  new Date(value.includes("T") ? value : `${value}T00:00:00`)
+
 
 export default function DizimosPage() {
   const [open, setOpen] = useState(false)
@@ -671,7 +674,7 @@ export default function DizimosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{new Date(dizimo.data).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell>{parseLocalDateString(dizimo.data).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell>
                         <Badge className={paymentInfo.color}>
                           <IconeComponente className="h-3 w-3 mr-1" />
