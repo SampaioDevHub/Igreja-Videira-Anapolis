@@ -1,27 +1,50 @@
 "use client"
 
-import type React from "react"
-import { useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { useMemo, useState } from "react"
+import type { ComponentType } from "react"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit, PiggyBank, TrendingUp, Users, Calendar, QrCode, Banknote, CreditCard, Smartphone, Settings } from 'lucide-react'
+  Button,
+  Card,
+  Col,
+  ConfigProvider,
+  DatePicker,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+  notification,
+} from "antd"
+import type { TableProps } from "antd"
+import {
+  BankOutlined,
+  CreditCardOutlined,
+  DeleteOutlined,
+  DollarOutlined,
+  EditOutlined,
+  PlusOutlined,
+  QrcodeOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  WalletOutlined,
+} from "@ant-design/icons"
+import dayjs from "dayjs"
+import { useTheme } from "next-themes"
+
 import { useReceitas } from "@/src/core/hooks/use-receitas"
 import { useCategories } from "@/src/core/hooks/use-categories"
-import { toast } from 'react-toastify'
+import type { Receita } from "@/src/core/@types/Receita"
+import { getAntdTheme } from "@/components/antd-theme"
 
 const getTodayDateString = () => {
   const today = new Date()
@@ -34,205 +57,134 @@ const getTodayDateString = () => {
 const parseLocalDateString = (value: string) =>
   new Date(value.includes("T") ? value : `${value}T00:00:00`)
 
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
+type CategoryItem = { id: string; name: string }
+
+type PaymentMethodOption = {
+  value: string
+  label: string
+  color?: string
+  icon: ComponentType<any>
+}
+
+const defaultPaymentMethods: PaymentMethodOption[] = [
+  {
+    value: "pix",
+    label: "PIX",
+    icon: QrcodeOutlined,
+    color: "green",
+  },
+  {
+    value: "cartao-debito",
+    label: "Cartao debito",
+    icon: CreditCardOutlined,
+    color: "blue",
+  },
+  {
+    value: "cartao-credito",
+    label: "Cartao credito",
+    icon: CreditCardOutlined,
+    color: "purple",
+  },
+  {
+    value: "dinheiro",
+    label: "Dinheiro",
+    icon: DollarOutlined,
+    color: "gold",
+  },
+  {
+    value: "transferencia",
+    label: "Transferencia",
+    icon: BankOutlined,
+    color: "cyan",
+  },
+]
+
+const extractMemberName = (dizimo: Receita) => {
+  if (dizimo.membro) {
+    return dizimo.membro
+  }
+
+  const description = dizimo.descricao || ""
+  const normalized = normalizeText(description)
+
+  if (normalized.startsWith("dizimo - ")) {
+    const separatorIndex = description.indexOf(" - ")
+    if (separatorIndex >= 0) {
+      return description.slice(separatorIndex + 3).split(" (")[0]
+    }
+  }
+
+  return description.split(" (")[0]
+}
 
 export default function DizimosPage() {
-  const [open, setOpen] = useState(false)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+  const [notificationApi, notificationContextHolder] = notification.useNotification()
+
+  const [dizimoModalOpen, setDizimoModalOpen] = useState(false)
+  const [paymentMethodModalOpen, setPaymentMethodModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    descricao: "",
-    valor: "",
-    data: getTodayDateString(),
-    membro: "",
-    formaPagamento: "",
-    observacoes: "",
-  })
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<CategoryItem | null>(null)
+
   const [searchTerm, setSearchTerm] = useState("")
   const [monthFilter, setMonthFilter] = useState("all")
   const [paymentFilter, setPaymentFilter] = useState("all")
 
+  const [dizimoForm] = Form.useForm()
+  const [paymentMethodForm] = Form.useForm()
+
   const { receitas, loading, addReceita, updateReceita, deleteReceita } = useReceitas()
-  const [paymentMethodDialogOpen, setPaymentMethodDialogOpen] = useState(false)
-  const [newPaymentMethodName, setNewPaymentMethodName] = useState("")
-  const [editingPaymentMethod, setEditingPaymentMethod] = useState<{ id: string; name: string } | null>(null)
-  const { categories: customPaymentMethods, loading: customPaymentMethodsLoading, addCategory: addCustomPaymentMethod, updateCategory: updateCustomPaymentMethod, deleteCategory: deleteCustomPaymentMethod } = useCategories("paymentMethods") // Usar a mesma coleção de formas de pagamento das ofertas
+  const {
+    categories: customPaymentMethods,
+    loading: customPaymentMethodsLoading,
+    addCategory: addCustomPaymentMethod,
+    updateCategory: updateCustomPaymentMethod,
+    deleteCategory: deleteCustomPaymentMethod,
+  } = useCategories("paymentMethods")
 
-  const defaultPaymentMethods = [
-    {
-      value: "pix",
-      label: "PIX",
-      icon: QrCode,
-      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-      iconColor: "text-green-600",
-    },
-    {
-      value: "cartao-debito",
-      label: "Cartão de Débito",
-      icon: CreditCard,
-      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-      iconColor: "text-blue-600",
-    },
-    {
-      value: "cartao-credito",
-      label: "Cartão de Crédito",
-      icon: CreditCard,
-      color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-      iconColor: "text-purple-600",
-    },
-    {
-      value: "dinheiro",
-      label: "Dinheiro",
-      icon: Banknote,
-      color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-      iconColor: "text-yellow-600",
-    },
-    {
-      value: "transferencia",
-      label: "Transferência",
-      icon: Smartphone,
-      color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-      iconColor: "text-indigo-600",
-    },
-  ]
+  const allPaymentMethods = useMemo<PaymentMethodOption[]>(() => {
+    const customMapped: PaymentMethodOption[] = customPaymentMethods.map((method) => ({
+      value: method.name.toLowerCase().replace(/\s/g, "-"),
+      label: method.name,
+      icon: WalletOutlined,
+      color: "geekblue",
+    }))
 
-  const allPaymentMethods = useMemo(() => {
-    const customMapped = customPaymentMethods.map(pm => ({
-      value: pm.name.toLowerCase().replace(/\s/g, '-'), 
-      label: pm.name,
-      icon: Banknote, 
-      color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-      iconColor: "text-gray-600",
-    }));
-    
-    const combined = [...defaultPaymentMethods.filter(dp => !customMapped.some(cm => cm.value === dp.value)), ...customMapped];
-    return combined;
-  }, [defaultPaymentMethods, customPaymentMethods]);
+    return [
+      ...defaultPaymentMethods.filter(
+        (method) => !customMapped.some((custom) => custom.value === method.value),
+      ),
+      ...customMapped,
+    ]
+  }, [customPaymentMethods])
 
-
-  // Filtrar apenas dízimos
   const dizimos = useMemo(() => {
-    return receitas.filter((receita) => receita.categoria.toLowerCase() === "dizimo")
+    return receitas.filter((receita) => normalizeText(receita.categoria) === "dizimo")
   }, [receitas])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const filteredDizimos = useMemo(() => {
+    const normalizedSearch = normalizeText(searchTerm)
 
-    if (!formData.membro || !formData.valor || !formData.data || !formData.formaPagamento) {
-     toast.error("Membro, valor, data e forma de pagamento são obrigatórios.")
-      return
-    }
+    return dizimos.filter((dizimo) => {
+      const memberName = extractMemberName(dizimo)
+      const matchesSearch =
+        normalizeText(dizimo.descricao).includes(normalizedSearch) ||
+        normalizeText(memberName).includes(normalizedSearch)
+      const matchesMonth =
+        monthFilter === "all" || new Date(dizimo.data).getMonth() === Number(monthFilter)
+      const matchesPayment =
+        paymentFilter === "all" || (dizimo.formaPagamento || "pix") === paymentFilter
 
-    try {
-      const dizimoData = {
-        descricao: `Dízimo - ${formData.membro}${formData.observacoes ? ` (${formData.observacoes})` : ""}`,
-        categoria: "dizimo",
-        valor: Number.parseFloat(formData.valor),
-        data: formData.data,
-        formaPagamento: formData.formaPagamento,
-        membro: formData.membro,
-        observacoes: formData.observacoes,
-      }
-
-      if (editingId) {
-        await updateReceita(editingId, dizimoData)
-        toast.success("Dízimo atualizado com sucesso.")
-      } else {
-        //@ts-ignore
-        await addReceita(dizimoData)
-        toast.success("Dízimo registrado com sucesso.")
-
-      }
-
-      setFormData({
-        descricao: "",
-        valor: "",
-        data: getTodayDateString(),
-        membro: "",
-        formaPagamento: "",
-        observacoes: "",
-      })
-      setEditingId(null)
-      setOpen(false)
-    } catch (error) {
-      console.error("Erro ao salvar dízimo:", error)
-      toast.error("Erro ao salvar dízimo.")
-    }
-  }
-
-  const handleEdit = (dizimo: any) => {
-    const membro = dizimo.membro || dizimo.descricao.replace("Dízimo - ", "").split(" (")[0]
-    const observacoes = dizimo.observacoes || ""
-
-    setFormData({
-      descricao: dizimo.descricao,
-      valor: dizimo.valor.toString(),
-      data: dizimo.data,
-      membro: membro,
-      formaPagamento: dizimo.formaPagamento || "pix",
-      observacoes: observacoes,
+      return matchesSearch && matchesMonth && matchesPayment
     })
-    setEditingId(dizimo.id)
-    setOpen(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este dízimo?")) {
-      try {
-        await deleteReceita(id)
-        toast.success("Dízimo excluído com sucesso.")
-
-      } catch (error) {
-        console.error("Erro ao excluir dízimo:", error)
-        toast.error("Erro ao excluir dízimo.")
-
-      }
-    }
-  }
-
-  // Funções para gerenciar formas de pagamento personalizadas
-  const handleAddOrUpdatePaymentMethod = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newPaymentMethodName.trim()) {
-      toast.error("O nome da forma de pagamento não pode ser vazio.")
-      return
-    }
-    try {
-      if (editingPaymentMethod) {
-        await updateCustomPaymentMethod(editingPaymentMethod.id, newPaymentMethodName)
-        toast.success("Forma de pagamento atualizada com sucesso!")
-      } else {
-        await addCustomPaymentMethod(newPaymentMethodName)
-        toast.success("Forma de pagamento adicionada com sucesso!")
-      }
-      setNewPaymentMethodName("")
-      setEditingPaymentMethod(null)
-    } catch (error) {
-      toast.error("Erro ao salvar forma de pagamento.")
-    }
-  }
-
-  const handleEditPaymentMethod = (method: { id: string; name: string }) => {
-    setNewPaymentMethodName(method.name)
-    setEditingPaymentMethod(method)
-  }
-
-  const handleDeletePaymentMethod = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta forma de pagamento?")) {
-      try {
-        await deleteCustomPaymentMethod(id)
-        toast.success("Forma de pagamento excluída com sucesso!")
-      } catch (error) {
-        toast.error("Erro ao excluir forma de pagamento.")
-      }
-    }
-  }
-
-
-  const filteredDizimos = dizimos.filter((dizimo) => {
-    const matchesSearch = dizimo.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesMonth = monthFilter === "all" || new Date(dizimo.data).getMonth() === Number.parseInt(monthFilter)
-    const matchesPayment = paymentFilter === "all" || (dizimo.formaPagamento || "pix") === paymentFilter
-    return matchesSearch && matchesMonth && matchesPayment
-  })
+  }, [dizimos, searchTerm, monthFilter, paymentFilter])
 
   const stats = useMemo(() => {
     const currentMonth = new Date().getMonth()
@@ -240,26 +192,14 @@ export default function DizimosPage() {
 
     const totalGeral = dizimos.reduce((sum, dizimo) => sum + dizimo.valor, 0)
     const totalMesAtual = dizimos
-      .filter((d) => {
-        const date = new Date(d.data)
+      .filter((dizimo) => {
+        const date = new Date(dizimo.data)
         return date.getMonth() === currentMonth && date.getFullYear() === currentYear
       })
       .reduce((sum, dizimo) => sum + dizimo.valor, 0)
 
-    // Corrigido: Extrair membros únicos corretamente
-    const membrosUnicos = new Set(
-      dizimos.map((dizimo) => {
-        if (dizimo.membro) {
-          return dizimo.membro
-        }
-        // Fallback para dados antigos
-        const descricaoLimpa = dizimo.descricao.replace("Dízimo - ", "")
-        const membroExtraido = descricaoLimpa.split(" (")[0]
-        return membroExtraido
-      }),
-    ).size
+    const membrosContribuintes = new Set(dizimos.map((dizimo) => extractMemberName(dizimo))).size
 
-    // Estatísticas por forma de pagamento
     const porFormaPagamento = dizimos.reduce(
       (acc, dizimo) => {
         const forma = dizimo.formaPagamento || "pix"
@@ -273,435 +213,478 @@ export default function DizimosPage() {
       totalGeral,
       totalMesAtual,
       totalDizimos: dizimos.length,
-      membrosContribuintes: membrosUnicos,
+      membrosContribuintes,
       porFormaPagamento,
     }
   }, [dizimos])
 
-  const getPaymentInfo = (formaPagamento: string) => {
+  const getPaymentInfo = (formaPagamento?: string): PaymentMethodOption => {
+    const value = formaPagamento || "pix"
     return (
-      allPaymentMethods.find((fp) => fp.value === formaPagamento) || {
-        value: "outros", // Fallback para formas de pagamento desconhecidas
-        label: formaPagamento, // Usa o valor real como label
-        icon: Banknote, // Ícone padrão
-        color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-        iconColor: "text-gray-600",
+      allPaymentMethods.find((method) => method.value === value) || {
+        value,
+        label: value,
+        icon: WalletOutlined,
       }
-    );
-  };
-
-  if (loading || customPaymentMethodsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
     )
   }
 
+  const openCreateModal = () => {
+    setEditingId(null)
+    dizimoForm.setFieldsValue({
+      membro: "",
+      valor: undefined,
+      data: dayjs(getTodayDateString()),
+      formaPagamento: "pix",
+      observacoes: "",
+    })
+    setDizimoModalOpen(true)
+  }
+
+  const handleEdit = (dizimo: Receita) => {
+    setEditingId(dizimo.id)
+    dizimoForm.setFieldsValue({
+      membro: extractMemberName(dizimo),
+      valor: dizimo.valor,
+      data: dayjs(dizimo.data),
+      formaPagamento: dizimo.formaPagamento || "pix",
+      observacoes: dizimo.observacoes || "",
+    })
+    setDizimoModalOpen(true)
+  }
+
+  const handleDizimoSubmit = async () => {
+    try {
+      const values = await dizimoForm.validateFields()
+      const descricao = values.observacoes
+        ? `Dizimo - ${values.membro} (${values.observacoes})`
+        : `Dizimo - ${values.membro}`
+
+      const dizimoData = {
+        tipo: "receita",
+        descricao,
+        categoria: "dizimo",
+        valor: Number(values.valor),
+        data: values.data.format("YYYY-MM-DD"),
+        formaPagamento: values.formaPagamento,
+        membro: values.membro,
+        observacoes: values.observacoes || "",
+      }
+
+      if (editingId) {
+        await updateReceita(editingId, dizimoData)
+        notificationApi.success({ message: "Dizimo atualizado com sucesso." })
+      } else {
+        await addReceita(dizimoData)
+        notificationApi.success({ message: "Dizimo registrado com sucesso." })
+      }
+
+      setDizimoModalOpen(false)
+      setEditingId(null)
+      dizimoForm.resetFields()
+    } catch (error: any) {
+      if (error?.errorFields) {
+        return
+      }
+      notificationApi.error({ message: "Erro ao salvar dizimo." })
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteReceita(id)
+      notificationApi.success({ message: "Dizimo excluido com sucesso." })
+    } catch (error) {
+      notificationApi.error({ message: "Erro ao excluir dizimo." })
+    }
+  }
+
+  const handlePaymentMethodSubmit = async () => {
+    try {
+      const values = await paymentMethodForm.validateFields()
+      const name = values.name.trim()
+
+      if (editingPaymentMethod) {
+        await updateCustomPaymentMethod(editingPaymentMethod.id, name)
+        notificationApi.success({ message: "Forma de pagamento atualizada com sucesso." })
+      } else {
+        await addCustomPaymentMethod(name)
+        notificationApi.success({ message: "Forma de pagamento adicionada com sucesso." })
+      }
+
+      setEditingPaymentMethod(null)
+      paymentMethodForm.resetFields()
+    } catch (error: any) {
+      if (error?.errorFields) {
+        return
+      }
+      notificationApi.error({ message: "Erro ao salvar forma de pagamento." })
+    }
+  }
+
+  const handleEditPaymentMethod = (method: CategoryItem) => {
+    setEditingPaymentMethod(method)
+    paymentMethodForm.setFieldsValue({ name: method.name })
+  }
+
+  const handleDeletePaymentMethod = async (id: string) => {
+    try {
+      await deleteCustomPaymentMethod(id)
+      notificationApi.success({ message: "Forma de pagamento excluida com sucesso." })
+    } catch (error) {
+      notificationApi.error({ message: "Erro ao excluir forma de pagamento." })
+    }
+  }
+
+  const closePaymentMethodModal = () => {
+    setPaymentMethodModalOpen(false)
+    setEditingPaymentMethod(null)
+    paymentMethodForm.resetFields()
+  }
+
+  const closeDizimoModal = () => {
+    setDizimoModalOpen(false)
+    setEditingId(null)
+    dizimoForm.resetFields()
+  }
+
+  const columns: TableProps<Receita>["columns"] = [
+    {
+      title: "Membro",
+      key: "membro",
+      render: (_, record) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text strong>{extractMemberName(record)}</Typography.Text>
+          {record.observacoes ? (
+            <Typography.Text type="secondary">{record.observacoes}</Typography.Text>
+          ) : null}
+        </Space>
+      ),
+    },
+    {
+      title: "Data",
+      dataIndex: "data",
+      key: "data",
+      render: (value: string) => parseLocalDateString(value).toLocaleDateString("pt-BR"),
+    },
+    {
+      title: "Forma de pagamento",
+      dataIndex: "formaPagamento",
+      key: "formaPagamento",
+      render: (value: string) => {
+        const paymentInfo = getPaymentInfo(value)
+        const IconComponent = paymentInfo.icon
+        return (
+          <Tag color={paymentInfo.color}>
+            <IconComponent style={{ marginRight: 6 }} />
+            {paymentInfo.label}
+          </Tag>
+        )
+      },
+    },
+    {
+      title: "Valor",
+      dataIndex: "valor",
+      key: "valor",
+      align: "right",
+      render: (value: number) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+    },
+    {
+      title: "Acoes",
+      key: "acoes",
+      align: "right",
+      render: (_, record) => (
+        <Space>
+          <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Popconfirm
+            title="Excluir dizimo?"
+            okText="Excluir"
+            cancelText="Cancelar"
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <Button type="text" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  const isLoading = loading || customPaymentMethodsLoading
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <PiggyBank className="h-8 w-8 text-primary" />
-            Dízimos
-          </h1>
-          <p className="text-muted-foreground">
-            Gerencie todos os dízimos da igreja com controle de formas de pagamento
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {/* Diálogo para Gerenciar Formas de Pagamento */}
-          <Dialog
-            open={paymentMethodDialogOpen}
-            onOpenChange={(isOpen) => {
-              setPaymentMethodDialogOpen(isOpen)
-              if (!isOpen) {
-                setNewPaymentMethodName("")
-                setEditingPaymentMethod(null)
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                Formas de Pagamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Gerenciar Formas de Pagamento</DialogTitle>
-                <DialogDescription>Adicione, edite ou remova formas de pagamento personalizadas.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddOrUpdatePaymentMethod} className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newPaymentMethodName">Nome da Forma de Pagamento</Label>
-                  <Input
-                    id="newPaymentMethodName"
-                    placeholder="Ex: Boleto, Cheque, etc."
-                    value={newPaymentMethodName}
-                    onChange={(e) => setNewPaymentMethodName(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit">
-                  {editingPaymentMethod ? "Atualizar Forma" : "Adicionar Forma"}
-                </Button>
-              </form>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Formas Existentes</h3>
-                {customPaymentMethods.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Nenhuma forma de pagamento personalizada adicionada.</p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {customPaymentMethods.map((method) => (
-                      <li key={method.id} className="flex items-center justify-between py-2">
-                        <span>{method.name}</span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditPaymentMethod(method)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDeletePaymentMethod(method.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Diálogo para Registrar/Editar Dízimo */}
-          <Dialog
-            open={open}
-            onOpenChange={(isOpen) => {
-              setOpen(isOpen)
-              if (isOpen && !editingId) {
-                setFormData((prev) => ({ ...prev, data: getTodayDateString() }))
-              }
-              if (!isOpen) {
-                setFormData({
-                  descricao: "",
-                  valor: "",
-                  data: getTodayDateString(),
-                  membro: "",
-                  formaPagamento: "",
-                  observacoes: "",
-                })
-                setEditingId(null)
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Registrar Dízimo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>{editingId ? "Editar Dízimo" : "Registrar Dízimo"}</DialogTitle>
-                <DialogDescription>
-                  {editingId ? "Edite os dados do dízimo." : "Registre um novo dízimo no sistema."}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="membro" className="text-right">
-                      Membro *
-                    </Label>
-                    <Input
-                      id="membro"
-                      placeholder="Nome do membro"
-                      className="col-span-3"
-                      value={formData.membro}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, membro: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="valor" className="text-right">
-                      Valor *
-                    </Label>
-                    <Input
-                      id="valor"
-                      type="number"
-                      step="0.01"
-                      placeholder="0,00"
-                      className="col-span-3"
-                      value={formData.valor}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="data" className="text-right">
-                      Data *
-                    </Label>
-                    <Input
-                      id="data"
-                      type="date"
-                      className="col-span-3"
-                      value={formData.data}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="formaPagamento" className="text-right">
-                      Forma de Pagamento *
-                    </Label>
-                    <Select
-                      value={formData.formaPagamento}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, formaPagamento: value }))}
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Selecione a forma de pagamento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allPaymentMethods.map((forma) => {
-                          const IconeComponente = forma.icon
-                          return (
-                            <SelectItem key={forma.value} value={forma.value}>
-                              <div className="flex items-center gap-2">
-                                <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
-                                {forma.label}
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="observacoes" className="text-right mt-2">
-                      Observações
-                    </Label>
-                    <Input
-                      id="observacoes"
-                      placeholder="Observações adicionais (opcional)"
-                      className="col-span-3"
-                      value={formData.observacoes}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, observacoes: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">{editingId ? "Atualizar Dízimo" : "Registrar Dízimo"}</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Geral</CardTitle>
-            <PiggyBank className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.totalGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">{stats.totalDizimos} dízimos registrados</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mês Atual</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.totalMesAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Contribuintes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.membrosContribuintes}</div>
-            <p className="text-xs text-muted-foreground">Membros únicos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Média Mensal</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R${" "}
-              {stats.totalDizimos > 0
-                ? (stats.totalGeral / Math.max(1, stats.totalDizimos / 12)).toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                  })
-                : "0,00"}
-            </div>
-            <p className="text-xs text-muted-foreground">Estimativa baseada no histórico</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cards de Formas de Pagamento */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {allPaymentMethods.map((forma) => {
-          const valor = stats.porFormaPagamento[forma.value] || 0
-          const IconeComponente = forma.icon
-          const percentual = stats.totalGeral > 0 ? (valor / stats.totalGeral) * 100 : 0
-
-          return (
-            <Card key={forma.value}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{forma.label}</CardTitle>
-                <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold">
-                  R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </div>
-                <p className="text-xs text-muted-foreground">{percentual.toFixed(1)}% do total</p>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Dízimos</CardTitle>
-          <CardDescription>Todos os dízimos registrados no sistema com formas de pagamento</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por membro ou descrição..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os meses</SelectItem>
-                <SelectItem value="0">Janeiro</SelectItem>
-                <SelectItem value="1">Fevereiro</SelectItem>
-                <SelectItem value="2">Março</SelectItem>
-                <SelectItem value="3">Abril</SelectItem>
-                <SelectItem value="4">Maio</SelectItem>
-                <SelectItem value="5">Junho</SelectItem>
-                <SelectItem value="6">Julho</SelectItem>
-                <SelectItem value="7">Agosto</SelectItem>
-                <SelectItem value="8">Setembro</SelectItem>
-                <SelectItem value="9">Outubro</SelectItem>
-                <SelectItem value="10">Novembro</SelectItem>
-                <SelectItem value="11">Dezembro</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Forma de pagamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as formas</SelectItem>
-                {allPaymentMethods.map((forma) => {
-                  const IconeComponente = forma.icon
-                  return (
-                    <SelectItem key={forma.value} value={forma.value}>
-                      <div className="flex items-center gap-2">
-                        <IconeComponente className={`h-4 w-4 ${forma.iconColor}`} />
-                        {forma.label}
-                      </div>
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
+    <ConfigProvider theme={getAntdTheme(isDark)}>
+      {notificationContextHolder}
+      <Spin spinning={isLoading} size="large">
+        <div className="space-y-6 min-h-[400px]">
+          <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-slate-100 p-6 shadow-sm dark:border-slate-700/70 dark:from-slate-900/70 dark:via-slate-900 dark:to-slate-800/70">
+            <Row gutter={[16, 16]} align="top" justify="space-between">
+              <Col xs={24} lg={16}>
+                <Space direction="vertical" size="small">
+                  <Typography.Title level={3} className="m-0">
+                    Dizimos
+                  </Typography.Title>
+                  <Typography.Text type="secondary">
+                    Controle completo dos dizimos com formas de pagamento.
+                  </Typography.Text>
+                </Space>
+              </Col>
+              <Col xs={24} lg={20} className="flex lg:justify-center lg:pr-4">
+                <Space>
+                  <Button icon={<SettingOutlined />} onClick={() => setPaymentMethodModalOpen(true)}>
+                    Formas de pagamento
+                  </Button>
+                  <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+                    Registrar dizimo
+                  </Button>
+                </Space>
+              </Col>
+            </Row>
           </div>
 
-          {filteredDizimos.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-muted-foreground">
-              {dizimos.length === 0 ? "Nenhum dízimo registrado" : "Nenhum dízimo encontrado"}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Membro</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Forma de Pagamento</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDizimos.map((dizimo) => {
-                  // Corrigido: Usar forma de pagamento com fallback
-                  const paymentInfo = getPaymentInfo(dizimo.formaPagamento || "pix")
-                  const IconeComponente = paymentInfo.icon
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Total geral"
+                value={stats.totalGeral}
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">{stats.totalDizimos} dizimos registrados</Typography.Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Mes atual"
+                value={stats.totalMesAtual}
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">
+                {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+              </Typography.Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic title="Contribuintes" value={stats.membrosContribuintes} />
+              <Typography.Text type="secondary">Membros unicos</Typography.Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Media mensal"
+                value={
+                  stats.totalDizimos > 0
+                    ? stats.totalGeral / Math.max(1, stats.totalDizimos / 12)
+                    : 0
+                }
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">Estimativa baseada no historico</Typography.Text>
+            </Card>
+          </Col>
+        </Row>
 
-                  // Corrigido: Extrair membro corretamente
-                  const membro = dizimo.membro || dizimo.descricao.replace("Dízimo - ", "").split(" (")[0]
+        <Row gutter={[16, 16]}>
+          {allPaymentMethods.map((method) => {
+            const valor = stats.porFormaPagamento[method.value] || 0
+            const percentual = stats.totalGeral > 0 ? (valor / stats.totalGeral) * 100 : 0
+            const IconComponent = method.icon
 
-                  return (
-                    <TableRow key={dizimo.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{membro}</div>
-                          {dizimo.observacoes && (
-                            <div className="text-xs text-muted-foreground">{dizimo.observacoes}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{parseLocalDateString(dizimo.data).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>
-                        <Badge className={paymentInfo.color}>
-                          <IconeComponente className="h-3 w-3 mr-1" />
-                          {paymentInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        R$ {dizimo.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(dizimo)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDelete(dizimo.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            return (
+              <Col xs={24} sm={12} lg={6} key={method.value}>
+                <Card>
+                  <Space direction="vertical" size={4}>
+                    <Space align="center">
+                      <IconComponent />
+                      <Typography.Text>{method.label}</Typography.Text>
+                    </Space>
+                    <Typography.Title level={4} className="m-0">
+                      R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </Typography.Title>
+                    <Typography.Text type="secondary">{percentual.toFixed(1)}% do total</Typography.Text>
+                  </Space>
+                </Card>
+              </Col>
+            )
+          })}
+        </Row>
+
+        <Card title="Historico de dizimos" extra={<Tag color="blue">Total filtrado: {filteredDizimos.length}</Tag>}>
+          <Space className="w-full" size="middle" wrap>
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="Buscar por membro ou descricao..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-[220px]"
+            />
+            <Select
+              value={monthFilter}
+              onChange={setMonthFilter}
+              className="min-w-[200px]"
+              options={[
+                { label: "Todos os meses", value: "all" },
+                { label: "Janeiro", value: "0" },
+                { label: "Fevereiro", value: "1" },
+                { label: "Marco", value: "2" },
+                { label: "Abril", value: "3" },
+                { label: "Maio", value: "4" },
+                { label: "Junho", value: "5" },
+                { label: "Julho", value: "6" },
+                { label: "Agosto", value: "7" },
+                { label: "Setembro", value: "8" },
+                { label: "Outubro", value: "9" },
+                { label: "Novembro", value: "10" },
+                { label: "Dezembro", value: "11" },
+              ]}
+            />
+            <Select
+              value={paymentFilter}
+              onChange={setPaymentFilter}
+              className="min-w-[220px]"
+              options={[
+                { label: "Todas as formas", value: "all" },
+                ...allPaymentMethods.map((method) => {
+                  const IconComponent = method.icon
+                  return {
+                    label: (
+                      <Space>
+                        <IconComponent />
+                        {method.label}
+                      </Space>
+                    ),
+                    value: method.value,
+                  }
+                }),
+              ]}
+            />
+          </Space>
+
+          <div className="mt-4">
+            {filteredDizimos.length === 0 ? (
+              <div className="py-10">
+                <Empty
+                  description={dizimos.length === 0 ? "Nenhum dizimo registrado" : "Nenhum dizimo encontrado"}
+                />
+              </div>
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={filteredDizimos}
+                rowKey="id"
+                pagination={{ pageSize: 10, size: "small" }}
+              />
+            )}
+          </div>
+        </Card>
+        </div>
+      </Spin>
+
+      <Modal
+        open={dizimoModalOpen}
+        onCancel={closeDizimoModal}
+        onOk={() => dizimoForm.submit()}
+        okText={editingId ? "Atualizar" : "Salvar"}
+        title={editingId ? "Editar dizimo" : "Registrar dizimo"}
+      >
+        <Form
+          form={dizimoForm}
+          layout="vertical"
+          onFinish={handleDizimoSubmit}
+          initialValues={{ data: dayjs(getTodayDateString()), formaPagamento: "pix" }}
+        >
+          <Form.Item
+            label="Membro"
+            name="membro"
+            rules={[{ required: true, message: "Informe o membro" }]}
+          >
+            <Input placeholder="Nome do membro" />
+          </Form.Item>
+          <Form.Item
+            label="Valor"
+            name="valor"
+            rules={[{ required: true, message: "Informe o valor" }]}
+          >
+            <InputNumber className="w-full" min={0} step={0.01} placeholder="0,00" />
+          </Form.Item>
+          <Form.Item
+            label="Data"
+            name="data"
+            rules={[{ required: true, message: "Informe a data" }]}
+          >
+            <DatePicker className="w-full" format="DD/MM/YYYY" />
+          </Form.Item>
+          <Form.Item
+            label="Forma de pagamento"
+            name="formaPagamento"
+            rules={[{ required: true, message: "Selecione a forma de pagamento" }]}
+          >
+            <Select
+              options={allPaymentMethods.map((method) => {
+                const IconComponent = method.icon
+                return {
+                  label: (
+                    <Space>
+                      <IconComponent />
+                      {method.label}
+                    </Space>
+                  ),
+                  value: method.value,
+                }
+              })}
+            />
+          </Form.Item>
+          <Form.Item label="Observacoes" name="observacoes">
+            <Input.TextArea rows={3} placeholder="Observacoes adicionais" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        open={paymentMethodModalOpen}
+        onCancel={closePaymentMethodModal}
+        onOk={() => paymentMethodForm.submit()}
+        okText={editingPaymentMethod ? "Atualizar" : "Adicionar"}
+        title="Formas de pagamento"
+      >
+        <Form form={paymentMethodForm} layout="vertical" onFinish={handlePaymentMethodSubmit}>
+          <Form.Item
+            label="Nome da forma"
+            name="name"
+            rules={[{ required: true, message: "Informe o nome da forma" }]}
+          >
+            <Input placeholder="Ex: Boleto, Cheque" />
+          </Form.Item>
+        </Form>
+        <div className="mt-2">
+          <Typography.Text strong>Formas existentes</Typography.Text>
+          <List
+            className="mt-2"
+            dataSource={customPaymentMethods}
+            locale={{ emptyText: "Nenhuma forma personalizada." }}
+            renderItem={(method) => (
+              <List.Item
+                actions={[
+                  <Button type="text" icon={<EditOutlined />} onClick={() => handleEditPaymentMethod(method)} />,
+                  <Popconfirm
+                    title="Excluir forma de pagamento?"
+                    okText="Excluir"
+                    cancelText="Cancelar"
+                    onConfirm={() => handleDeletePaymentMethod(method.id)}
+                  >
+                    <Button type="text" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>,
+                ]}
+              >
+                <Typography.Text>{method.name}</Typography.Text>
+              </List.Item>
+            )}
+          />
+        </div>
+      </Modal>
+    </ConfigProvider>
   )
 }

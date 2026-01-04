@@ -3,8 +3,10 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import "antd/dist/reset.css"
 import "./globals.css"
 import { ThemeProvider } from "next-themes"
+import { AntdClientProvider } from "@/components/antd-client-provider"
 import { FirebaseProvider } from "@/src/services/firebase/provider/firebase-provider"
 import { AuthProvider } from "@/src/services/firebase/auth/context/auth-context"
 
@@ -29,11 +31,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <FirebaseProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </FirebaseProvider>
+          <AntdClientProvider>
+            <FirebaseProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </FirebaseProvider>
+          </AntdClientProvider>
         </ThemeProvider>
       </body>
     </html>

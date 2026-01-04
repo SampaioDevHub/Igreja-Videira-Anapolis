@@ -1,30 +1,39 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Bell, LogOut, User } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import {
+  Avatar,
+  Badge,
+  Button,
+  ConfigProvider,
+  Dropdown,
+  Space,
+  Typography,
+} from "antd"
+import type { MenuProps } from "antd"
+import {
+  BellOutlined,
+  DownOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  UserOutlined,
+} from "@ant-design/icons"
+import { useTheme } from "next-themes"
 
 import { useAuth } from "@/src/services/firebase/auth/context/auth-context"
 import { notificationService } from "@/src/services/firebase/Modulo-Notification/notification-service"
-
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ModeToggle } from "./mode-toggle"
 import { NotificationModal } from "./NotificationModal"
 import { NotificationData } from "@/src/core/@types/NotificationData"
+import { getAntdTheme } from "@/components/antd-theme"
 
 export function Header() {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+
   const [hasNewNotification, setHasNewNotification] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [notifications, setNotifications] = useState<NotificationData[]>([])
@@ -60,8 +69,8 @@ export function Header() {
     try {
       await logout()
       await notificationService.sendNotification({
-        title: "Logout realizado com sucesso!",
-        body: "Você saiu do sistema com segurança.",
+        title: "Logout realizado com sucesso",
+        body: "Voce saiu do sistema com seguranca.",
       })
       router.push("/login")
     } catch {
@@ -86,51 +95,70 @@ export function Header() {
     setShowModal(true)
   }
 
-  const renderUserAvatar = () => (
-    <Avatar className="h-8 w-8">
-      <AvatarImage src={user?.photoURL ?? ""} alt="Avatar" />
-      <AvatarFallback>{getUserInitials(user?.displayName, user?.email)}</AvatarFallback>
-    </Avatar>
+  const userLabel = user?.displayName || user?.email || "Usuario"
+
+  const menuItems: MenuProps["items"] = useMemo(
+    () => [
+      {
+        key: "perfil",
+        icon: <UserOutlined />,
+        label: <Link href="/configuracoes">Perfil</Link>,
+      },
+      {
+        key: "config",
+        icon: <SettingOutlined />,
+        label: <Link href="/configuracoes">Configuracoes</Link>,
+      },
+      { type: "divider" },
+      {
+        key: "logout",
+        icon: <LogoutOutlined />,
+        label: "Sair",
+        onClick: handleLogout,
+      },
+    ],
+    [handleLogout],
   )
 
   return (
-    <>
-      <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-        <div className="flex-1">
-          <h1 className="text-lg font-semibold md:text-2xl">Dashboard Financeiro</h1>
-        </div>
-        <div className="flex items-center gap-4 relative">
-          <Button variant="outline" size="icon" onClick={openNotifications} className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="sr-only">Notificações</span>
-            {hasNewNotification && (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-green-500 animate-ping" />
-            )}
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                {renderUserAvatar()}
-                <span className="sr-only">Menu do usuário</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                {user?.displayName ?? user?.email}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <Link href="/configuracoes">Perfil</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <ConfigProvider theme={getAntdTheme(isDark)}>
+      <header className="flex h-16 items-center justify-between border-b border-slate-200/70 bg-white/70 px-4 backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/70 lg:px-6">
+        <Space direction="vertical" size={0} className="min-w-0">
+          <Typography.Title level={4} className="m-0 truncate">
+            Dashboard Financeiro
+          </Typography.Title>
+          <Typography.Text type="secondary" className="hidden sm:block">
+            Visao executiva das financas da igreja
+          </Typography.Text>
+        </Space>
+
+        <Space size="middle">
+          <Badge dot={hasNewNotification} offset={[-2, 2]}>
+            <Button
+              type="text"
+              shape="circle"
+              icon={<BellOutlined />}
+              aria-label="Notificacoes"
+              onClick={openNotifications}
+            />
+          </Badge>
+
+          <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={["click"]}>
+            <Button type="text" className="flex items-center gap-2">
+              <Avatar
+                size={32}
+                src={user?.photoURL || undefined}
+                icon={!user?.photoURL ? <UserOutlined /> : undefined}
+              >
+                {getUserInitials(user?.displayName, user?.email)}
+              </Avatar>
+              <span className="hidden md:inline text-sm font-medium truncate max-w-[160px]">
+                {userLabel}
+              </span>
+              <DownOutlined className="text-xs" />
+            </Button>
+          </Dropdown>
+        </Space>
       </header>
 
       <NotificationModal
@@ -139,6 +167,6 @@ export function Header() {
         notifications={notifications}
         onDelete={handleDeleteNotification}
       />
-    </>
+    </ConfigProvider>
   )
 }

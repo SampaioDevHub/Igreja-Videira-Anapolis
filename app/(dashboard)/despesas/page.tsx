@@ -1,31 +1,44 @@
 "use client"
 
-import type React from "react"
+import { useMemo, useState } from "react"
+import {
+  Button,
+  Card,
+  Col,
+  ConfigProvider,
+  DatePicker,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+  notification,
+} from "antd"
+import type { TableProps } from "antd"
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  SettingOutlined,
+} from "@ant-design/icons"
+import dayjs from "dayjs"
+import { useTheme } from "next-themes"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Plus, Search, Trash2, Edit, Settings } from 'lucide-react' 
 import { useDespesas } from "@/src/core/hooks/use-despesas"
-import { useCategories } from "@/src/core/hooks/use-categories" 
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription
-} from "@/components/ui/alert"
+import { useCategories } from "@/src/core/hooks/use-categories"
+import type { Despesa } from "@/src/core/@types/Despesa"
+import { getAntdTheme } from "@/components/antd-theme"
 
 const getTodayDateString = () => {
   const today = new Date()
@@ -38,505 +51,490 @@ const getTodayDateString = () => {
 const parseLocalDateString = (value: string) =>
   new Date(value.includes("T") ? value : `${value}T00:00:00`)
 
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
+type CategoryItem = { id: string; name: string }
+
+const statusColors: Record<Despesa["status"], string> = {
+  Pago: "green",
+  Pendente: "gold",
+  Vencido: "red",
+}
+
 export default function DespesasPage() {
-  const [open, setOpen] = useState(false)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+  const [notificationApi, notificationContextHolder] = notification.useNotification()
+
+  const [despesaModalOpen, setDespesaModalOpen] = useState(false)
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    descricao: "",
-    categoria: "",
-    valor: "",
-    data: getTodayDateString(),
-    status: "Pendente" as "Pago" | "Pendente" | "Vencido",
-  })
+  const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
 
+  const [despesaForm] = Form.useForm()
+  const [categoryForm] = Form.useForm()
+
   const { despesas, loading, addDespesa, updateDespesa, deleteDespesa } = useDespesas()
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState("")
-  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
-  const { categories, loading: categoriesLoading, addCategory, updateCategory, deleteCategory } = useCategories("despesaCategories") // Usar o hook genérico com nome da coleção
+  const {
+    categories,
+    loading: categoriesLoading,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+  } = useCategories("despesaCategories")
 
-  const defaultCategories = ["Utilidades", "Pessoal", "Manutenção", "Infraestrutura", "Ministérios", "Água", "Luz", "Energia", "Combustível", "Outros"]
-  const allCategories = [...defaultCategories, ...categories.map(cat => cat.name)]
+  const defaultCategories = [
+    "Utilidades",
+    "Pessoal",
+    "Manutencao",
+    "Infraestrutura",
+    "Ministerios",
+    "Agua",
+    "Luz",
+    "Energia",
+    "Combustivel",
+    "Outros",
+  ]
 
+  const allCategories = useMemo(() => {
+    const names = [...defaultCategories, ...categories.map((cat) => cat.name)]
+    return Array.from(new Set(names))
+  }, [categories])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const stats = useMemo(() => {
+    const total = despesas.reduce((sum, despesa) => sum + despesa.valor, 0)
+    const pagas = despesas.filter((d) => d.status === "Pago").reduce((sum, d) => sum + d.valor, 0)
+    const pendentes = despesas.filter((d) => d.status === "Pendente").reduce((sum, d) => sum + d.valor, 0)
+    const vencidas = despesas.filter((d) => d.status === "Vencido").reduce((sum, d) => sum + d.valor, 0)
 
-    if (!formData.descricao || !formData.categoria || !formData.valor || !formData.data) {
-      Alert({
-        title: "Erro",
-        variant: "destructive",
-      })
-      return
-    }
+    return { total, pagas, pendentes, vencidas }
+  }, [despesas])
 
+  const filteredDespesas = useMemo(() => {
+    const normalizedSearch = normalizeText(searchTerm)
+
+    return despesas.filter((despesa) => {
+      const matchesSearch = normalizeText(despesa.descricao).includes(normalizedSearch)
+      const matchesCategory =
+        categoryFilter === "all" ||
+        normalizeText(despesa.categoria) === normalizeText(categoryFilter)
+      const matchesStatus =
+        statusFilter === "all" || normalizeText(despesa.status) === normalizeText(statusFilter)
+
+      return matchesSearch && matchesCategory && matchesStatus
+    })
+  }, [despesas, searchTerm, categoryFilter, statusFilter])
+
+  const openCreateModal = () => {
+    setEditingId(null)
+    despesaForm.setFieldsValue({
+      descricao: "",
+      categoria: undefined,
+      valor: undefined,
+      data: dayjs(getTodayDateString()),
+      status: "Pendente",
+    })
+    setDespesaModalOpen(true)
+  }
+
+  const handleEdit = (despesa: Despesa) => {
+    setEditingId(despesa.id)
+    despesaForm.setFieldsValue({
+      descricao: despesa.descricao,
+      categoria: despesa.categoria,
+      valor: despesa.valor,
+      data: dayjs(despesa.data),
+      status: despesa.status,
+    })
+    setDespesaModalOpen(true)
+  }
+
+  const handleDespesaSubmit = async () => {
     try {
+      const values = await despesaForm.validateFields()
       const despesaData = {
-        descricao: formData.descricao,
-        categoria: formData.categoria,
-        valor: Number.parseFloat(formData.valor),
-        data: formData.data,
-        status: formData.status,
+        descricao: values.descricao,
+        categoria: values.categoria,
+        valor: Number(values.valor),
+        data: values.data.format("YYYY-MM-DD"),
+        status: values.status,
       }
 
       if (editingId) {
         await updateDespesa(editingId, despesaData)
-        Alert({
-          title: "Despesa atualizada!",
-
-        })
+        notificationApi.success({ message: "Despesa atualizada com sucesso." })
       } else {
         await addDespesa(despesaData)
-        Alert({
-          title: "Despesa adicionada!",
-
-        })
+        notificationApi.success({ message: "Despesa adicionada com sucesso." })
       }
 
-      setFormData({ descricao: "", categoria: "", valor: "", data: getTodayDateString(), status: "Pendente" })
+      setDespesaModalOpen(false)
       setEditingId(null)
-      setOpen(false)
-    } catch (error) {
-      Alert({
-        title: "Erro",
-
-        variant: "destructive",
-      })
+      despesaForm.resetFields()
+    } catch (error: any) {
+      if (error?.errorFields) {
+        return
+      }
+      notificationApi.error({ message: "Erro ao salvar despesa." })
     }
-  }
-
-  const handleEdit = (despesa: any) => {
-    setFormData({
-      descricao: despesa.descricao,
-      categoria: despesa.categoria,
-      valor: despesa.valor.toString(),
-      data: despesa.data,
-      status: despesa.status,
-    })
-    setEditingId(despesa.id)
-    setOpen(true)
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta despesa?")) {
-      try {
-        await deleteDespesa(id)
-        Alert({
-          title: "Despesa excluída!",
-
-        })
-      } catch (error) {
-        Alert({
-          title: "Erro",
-
-          variant: "destructive",
-        })
-      }
-    }
-  }
-
-
-  const handleAddOrUpdateCategory = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newCategoryName.trim()) {
-      Alert({ title: "O nome da categoria não pode ser vazio.", variant: "destructive" })
-      return
-    }
     try {
-      if (editingCategory) {
-        await updateCategory(editingCategory.id, newCategoryName)
-        Alert({ title: "Categoria atualizada com sucesso!" })
-      } else {
-        await addCategory(newCategoryName)
-        Alert({ title: "Categoria adicionada com sucesso!" })
-      }
-      setNewCategoryName("")
-      setEditingCategory(null)
+      await deleteDespesa(id)
+      notificationApi.success({ message: "Despesa excluida com sucesso." })
     } catch (error) {
-      Alert({ title: "Erro ao salvar categoria.", variant: "destructive" })
+      notificationApi.error({ message: "Erro ao excluir despesa." })
     }
   }
 
-  const handleEditCategory = (category: { id: string; name: string }) => {
-    setNewCategoryName(category.name)
+  const handleCategorySubmit = async () => {
+    try {
+      const values = await categoryForm.validateFields()
+      const name = values.name.trim()
+
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, name)
+        notificationApi.success({ message: "Categoria atualizada com sucesso." })
+      } else {
+        await addCategory(name)
+        notificationApi.success({ message: "Categoria adicionada com sucesso." })
+      }
+
+      setEditingCategory(null)
+      categoryForm.resetFields()
+    } catch (error: any) {
+      if (error?.errorFields) {
+        return
+      }
+      notificationApi.error({ message: "Erro ao salvar categoria." })
+    }
+  }
+
+  const handleEditCategory = (category: CategoryItem) => {
     setEditingCategory(category)
+    categoryForm.setFieldsValue({ name: category.name })
   }
 
   const handleDeleteCategory = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta categoria?")) {
-      try {
-        await deleteCategory(id)
-        Alert({ title: "Categoria excluída com sucesso!" })
-      } catch (error) {
-        Alert({ title: "Erro ao excluir categoria.", variant: "destructive" })
-      }
+    try {
+      await deleteCategory(id)
+      notificationApi.success({ message: "Categoria excluida com sucesso." })
+    } catch (error) {
+      notificationApi.error({ message: "Erro ao excluir categoria." })
     }
   }
 
-
-  const filteredDespesas = despesas.filter((despesa) => {
-    const matchesSearch = despesa.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || despesa.categoria.toLowerCase() === categoryFilter.toLowerCase()
-    const matchesStatus = statusFilter === "all" || despesa.status.toLowerCase() === statusFilter
-    return matchesSearch && matchesCategory && matchesStatus
-  })
-
-  const stats = {
-    total: despesas.reduce((sum, despesa) => sum + despesa.valor, 0),
-    pagas: despesas.filter((d) => d.status === "Pago").reduce((sum, d) => sum + d.valor, 0),
-    pendentes: despesas.filter((d) => d.status === "Pendente").reduce((sum, d) => sum + d.valor, 0),
-    vencidas: despesas.filter((d) => d.status === "Vencido").reduce((sum, d) => sum + d.valor, 0),
+  const closeCategoryModal = () => {
+    setCategoryModalOpen(false)
+    setEditingCategory(null)
+    categoryForm.resetFields()
   }
 
-  if (loading || categoriesLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
+  const closeDespesaModal = () => {
+    setDespesaModalOpen(false)
+    setEditingId(null)
+    despesaForm.resetFields()
   }
+
+  const columns: TableProps<Despesa>["columns"] = [
+    {
+      title: "Descricao",
+      dataIndex: "descricao",
+      key: "descricao",
+      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
+    },
+    {
+      title: "Categoria",
+      dataIndex: "categoria",
+      key: "categoria",
+      render: (value: string) => <Typography.Text type="secondary">{value}</Typography.Text>,
+    },
+    {
+      title: "Data",
+      dataIndex: "data",
+      key: "data",
+      render: (value: string) => parseLocalDateString(value).toLocaleDateString("pt-BR"),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (value: Despesa["status"]) => <Tag color={statusColors[value]}>{value}</Tag>,
+    },
+    {
+      title: "Valor",
+      dataIndex: "valor",
+      key: "valor",
+      align: "right",
+      render: (value: number) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+    },
+    {
+      title: "Acoes",
+      key: "acoes",
+      align: "right",
+      render: (_, record) => (
+        <Space>
+          <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Popconfirm
+            title="Excluir despesa?"
+            okText="Excluir"
+            cancelText="Cancelar"
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <Button type="text" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  const isLoading = loading || categoriesLoading
 
   return (
-    
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Despesas</h1>
-          <p className="text-muted-foreground">Controle todas as despesas da igreja</p>
-        </div>
-        <div className="flex gap-2">
-          {/* Diálogo para Gerenciar Categorias de Despesas */}
-          <Dialog
-            open={categoryDialogOpen}
-            onOpenChange={(isOpen) => {
-              setCategoryDialogOpen(isOpen)
-              if (!isOpen) {
-                setNewCategoryName("")
-                setEditingCategory(null)
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                Categorias
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Gerenciar Categorias de Despesas</DialogTitle>
-                <DialogDescription>Adicione, edite ou remova categorias personalizadas para despesas.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddOrUpdateCategory} className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newCategoryName">Nome da Categoria</Label>
-                  <Input
-                    id="newCategoryName"
-                    placeholder="Ex: Aluguel, Salários, etc."
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit">
-                  {editingCategory ? "Atualizar Categoria" : "Adicionar Categoria"}
-                </Button>
-              </form>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Categorias Existentes</h3>
-                {categories.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Nenhuma categoria personalizada adicionada.</p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {categories.map((cat) => (
-                      <li key={cat.id} className="flex items-center justify-between py-2">
-                        <span>{cat.name}</span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(cat)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDeleteCategory(cat.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Diálogo para Nova/Editar Despesa */}
-          <Dialog
-            open={open}
-            onOpenChange={(isOpen) => {
-              setOpen(isOpen)
-              if (isOpen && !editingId) {
-                setFormData((prev) => ({ ...prev, data: getTodayDateString() }))
-              }
-              if (!isOpen) {
-                setFormData({ descricao: "", categoria: "", valor: "", data: getTodayDateString(), status: "Pendente" })
-                setEditingId(null)
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Despesa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{editingId ? "Editar Despesa" : "Nova Despesa"}</DialogTitle>
-                <DialogDescription>
-                  {editingId ? "Edite os dados da despesa." : "Registre uma nova despesa no sistema."}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="descricao" className="text-right">
-                      Descrição
-                    </Label>
-                    <Input
-                      id="descricao"
-                      placeholder="Descrição da despesa"
-                      className="col-span-3"
-                      value={formData.descricao}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="categoria" className="text-right">
-                      Categoria
-                    </Label>
-                    <Select
-                      value={formData.categoria}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria: value }))}
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Selecione a categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allCategories.map((catName) => (
-                          <SelectItem key={catName} value={catName}>
-                            {catName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="valor" className="text-right">
-                      Valor
-                    </Label>
-                    <Input
-                      id="valor"
-                      type="number"
-                      step="0.01"
-                      placeholder="0,00"
-                      className="col-span-3"
-                      value={formData.valor}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="data" className="text-right">
-                      Data
-                    </Label>
-                    <Input
-                      id="data"
-                      type="date"
-                      className="col-span-3"
-                      value={formData.data}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, data: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="status" className="text-right">
-                      Status
-                    </Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value: "Pago" | "Pendente" | "Vencido") =>
-                        setFormData((prev) => ({ ...prev, status: value }))
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Status do pagamento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pago">Pago</SelectItem>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                        <SelectItem value="Vencido">Vencido</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">{editingId ? "Atualizar Despesa" : "Salvar Despesa"}</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">{despesas.length} despesas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pagas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.pagas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.pagas / stats.total) * 100).toFixed(1) : 0}% do total
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.pendentes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.pendentes / stats.total) * 100).toFixed(1) : 0}% do total
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vencidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats.vencidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.vencidas / stats.total) * 100).toFixed(1) : 0}% do total
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Despesas</CardTitle>
-          <CardDescription>Histórico de todas as despesas registradas</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar despesas..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {allCategories.map((catName) => (
-                  <SelectItem key={catName} value={catName}>
-                    {catName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="vencido">Vencido</SelectItem>
-              </SelectContent>
-            </Select>
+    <ConfigProvider theme={getAntdTheme(isDark)}>
+      {notificationContextHolder}
+      <Spin spinning={isLoading} size="large">
+        <div className="space-y-6 min-h-[400px]">
+          <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-slate-100 p-6 shadow-sm dark:border-slate-700/70 dark:from-slate-900/70 dark:via-slate-900 dark:to-slate-800/70">
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} lg={16}>
+                <Space direction="vertical" size="small">
+                  <Typography.Title level={3} className="m-0">
+                    Despesas
+                  </Typography.Title>
+                  <Typography.Text type="secondary">
+                    Controle completo das despesas registradas.
+                  </Typography.Text>
+                </Space>
+              </Col>
+              <Col xs={24} lg={20} className="flex lg:justify-end">
+                <Space>
+                  <Button icon={<SettingOutlined />} onClick={() => setCategoryModalOpen(true)}>
+                    Categorias
+                  </Button>
+                  <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+                    Nova despesa
+                  </Button>
+                </Space>
+              </Col>
+            </Row>
           </div>
 
-          {filteredDespesas.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-muted-foreground">
-              {despesas.length === 0 ? "Nenhuma despesa cadastrada" : "Nenhuma despesa encontrada"}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDespesas.map((despesa) => (
-                  <TableRow key={despesa.id}>
-                    <TableCell className="font-medium">{despesa.descricao}</TableCell>
-                    <TableCell className="capitalize">{despesa.categoria}</TableCell>
-                    <TableCell>{parseLocalDateString(despesa.data).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${despesa.status === "Pago"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                          : despesa.status === "Pendente"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                          }`}
-                      >
-                        {despesa.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      R$ {despesa.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(despesa)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(despesa.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Total"
+                value={stats.total}
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">{despesas.length} despesas</Typography.Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Pagas"
+                value={stats.pagas}
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">
+                {stats.total > 0 ? ((stats.pagas / stats.total) * 100).toFixed(1) : 0}% do total
+              </Typography.Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Pendentes"
+                value={stats.pendentes}
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">
+                {stats.total > 0 ? ((stats.pendentes / stats.total) * 100).toFixed(1) : 0}% do total
+              </Typography.Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Vencidas"
+                value={stats.vencidas}
+                formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+              />
+              <Typography.Text type="secondary">
+                {stats.total > 0 ? ((stats.vencidas / stats.total) * 100).toFixed(1) : 0}% do total
+              </Typography.Text>
+            </Card>
+          </Col>
+        </Row>
 
+        <Card
+          title="Lista de despesas"
+          extra={<Tag color="blue">Total filtrado: {filteredDespesas.length}</Tag>}
+        >
+          <Space className="w-full" size="middle" wrap>
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="Buscar despesas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-[220px]"
+            />
+            <Select
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              className="min-w-[200px]"
+              options={[
+                { label: "Todas", value: "all" },
+                ...allCategories.map((catName) => ({ label: catName, value: catName })),
+              ]}
+            />
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              className="min-w-[180px]"
+              options={[
+                { label: "Todos", value: "all" },
+                { label: "Pago", value: "Pago" },
+                { label: "Pendente", value: "Pendente" },
+                { label: "Vencido", value: "Vencido" },
+              ]}
+            />
+          </Space>
+
+          <div className="mt-4">
+            {filteredDespesas.length === 0 ? (
+              <div className="py-10">
+                <Empty
+                  description={despesas.length === 0 ? "Nenhuma despesa cadastrada" : "Nenhuma despesa encontrada"}
+                />
+              </div>
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={filteredDespesas}
+                rowKey="id"
+                pagination={{ pageSize: 10, size: "small" }}
+              />
+            )}
+          </div>
+        </Card>
+        </div>
+      </Spin>
+
+      <Modal
+        open={despesaModalOpen}
+        onCancel={closeDespesaModal}
+        onOk={() => despesaForm.submit()}
+        okText={editingId ? "Atualizar" : "Salvar"}
+        title={editingId ? "Editar despesa" : "Nova despesa"}
+      >
+        <Form
+          form={despesaForm}
+          layout="vertical"
+          onFinish={handleDespesaSubmit}
+          initialValues={{ data: dayjs(getTodayDateString()), status: "Pendente" }}
+        >
+          <Form.Item
+            label="Descricao"
+            name="descricao"
+            rules={[{ required: true, message: "Informe a descricao" }]}
+          >
+            <Input placeholder="Descricao da despesa" />
+          </Form.Item>
+          <Form.Item
+            label="Categoria"
+            name="categoria"
+            rules={[{ required: true, message: "Selecione a categoria" }]}
+          >
+            <Select
+              showSearch
+              optionFilterProp="label"
+              options={allCategories.map((catName) => ({ label: catName, value: catName }))}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Valor"
+            name="valor"
+            rules={[{ required: true, message: "Informe o valor" }]}
+          >
+            <InputNumber className="w-full" min={0} step={0.01} placeholder="0,00" />
+          </Form.Item>
+          <Form.Item
+            label="Data"
+            name="data"
+            rules={[{ required: true, message: "Informe a data" }]}
+          >
+            <DatePicker className="w-full" format="DD/MM/YYYY" />
+          </Form.Item>
+          <Form.Item
+            label="Status"
+            name="status"
+            rules={[{ required: true, message: "Selecione o status" }]}
+          >
+            <Select
+              options={[
+                { label: "Pago", value: "Pago" },
+                { label: "Pendente", value: "Pendente" },
+                { label: "Vencido", value: "Vencido" },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        open={categoryModalOpen}
+        onCancel={closeCategoryModal}
+        onOk={() => categoryForm.submit()}
+        okText={editingCategory ? "Atualizar" : "Adicionar"}
+        title="Categorias de despesas"
+      >
+        <Form form={categoryForm} layout="vertical" onFinish={handleCategorySubmit}>
+          <Form.Item
+            label="Nome da categoria"
+            name="name"
+            rules={[{ required: true, message: "Informe o nome da categoria" }]}
+          >
+            <Input placeholder="Ex: Manutencao, Infraestrutura" />
+          </Form.Item>
+        </Form>
+        <div className="mt-2">
+          <Typography.Text strong>Categorias existentes</Typography.Text>
+          <List
+            className="mt-2"
+            dataSource={categories}
+            locale={{ emptyText: "Nenhuma categoria personalizada." }}
+            renderItem={(cat) => (
+              <List.Item
+                actions={[
+                  <Button type="text" icon={<EditOutlined />} onClick={() => handleEditCategory(cat)} />,
+                  <Popconfirm
+                    title="Excluir categoria?"
+                    okText="Excluir"
+                    cancelText="Cancelar"
+                    onConfirm={() => handleDeleteCategory(cat.id)}
+                  >
+                    <Button type="text" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>,
+                ]}
+              >
+                <Typography.Text>{cat.name}</Typography.Text>
+              </List.Item>
+            )}
+          />
+        </div>
+      </Modal>
+    </ConfigProvider>
   )
 }

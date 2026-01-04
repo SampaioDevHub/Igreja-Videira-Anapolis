@@ -3,6 +3,7 @@ import {
   DollarSign,
   FileText,
   Home,
+  MessageCircle,
   PiggyBank,
   Settings,
   TrendingDown,
